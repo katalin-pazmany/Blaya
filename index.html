@@ -4,7 +4,7 @@
   <link rel="icon" type="image/png" href="paw-icon.svg">
   <meta property="og:title" content="BLAYA Kutyapanzió – Nem csak kutyapanzió, második otthon">
   <meta property="og:description" content="Családias kutyapanzió Csávolyon. Szeretetteljes gondoskodás, biztonság és napi fotók – hogy kedvenced jól érezze magát, amíg Te távol vagy.">
-  <meta property="og:image" content="https://incredible-donut-efc7b7.netlify.app/husky_hero.jpeg">
+  <meta property="og:image" content="https://blaya.netlify.app/husky_hero.jpeg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://blaya.hu">
@@ -19,7 +19,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="BLAYA Kutyapanzió – Nem csak kutyapanzió, második otthon">
 <meta name="twitter:description" content="Családias kutyapanzió Csávolyon. Szeretetteljes gondoskodás, biztonság és napi fotók.">
-<meta name="twitter:image" content="https://incredible-donut-efc7b7.netlify.app/husky_hero.jpeg">
+<meta name="twitter:image" content="https://blaya.netlify.app/husky_hero.jpeg">
 <link rel="canonical" href="https://blaya.hu">
 <!-- Plausible Analytics (adatvédelem-barát). Regisztráció: https://plausible.io → add hozzá a blaya.hu domaint -->
 <script defer data-domain="blaya.hu" src="https://plausible.io/js/script.js"></script>
@@ -30,8 +30,8 @@
   "@type": "LocalBusiness",
   "name": "BLAYA Kutyapanzió",
   "description": "Családias kutyapanzió Csávolyon – szeretetteljes gondoskodás, biztonságos környezet és napi fotók.",
-  "image": "https://incredible-donut-efc7b7.netlify.app/husky_hero.jpeg",
-  "logo": "https://incredible-donut-efc7b7.netlify.app/blaya_logo.png",
+  "image": "https://blaya.netlify.app/husky_hero.jpeg",
+  "logo": "https://blaya.netlify.app/blaya_logo.png",
   "url": "https://blaya.hu",
   "telephone": "+36301592499",
   "email": "info@blaya.hu",
@@ -321,6 +321,20 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgb
 .form-checkbox input { width: 18px; height: 18px; accent-color: var(--primary); flex-shrink: 0; margin-top: 2px; }
 .form-checkbox label { color: rgba(255,255,255,0.75); font-size: 0.88rem; line-height: 1.5; }
 .form-checkbox label a { color: var(--primary); }
+/* Fizetés ütemezése — választható kártyák (pipával) */
+.pay-timing { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:600px){ .pay-timing { grid-template-columns: 1fr; } }
+.pay-opt { position: relative; display: flex; align-items: flex-start; gap: 10px; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all .2s; }
+.pay-opt:hover { border-color: rgba(249,153,5,0.5); }
+.pay-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.pay-opt .pay-check { width: 20px; height: 20px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+.pay-opt .pay-check svg { width: 13px; height: 13px; stroke: var(--dark); fill: none; stroke-width: 3; opacity: 0; }
+.pay-opt .pay-body { display: flex; flex-direction: column; gap: 2px; }
+.pay-opt .pay-title { font-family: 'Oswald', sans-serif; font-size: 0.95rem; color: var(--white); letter-spacing: 0.5px; }
+.pay-opt .pay-desc { font-size: 0.78rem; color: rgba(255,255,255,0.5); line-height: 1.4; }
+.pay-opt input:checked ~ .pay-check { background: var(--primary); border-color: var(--primary); }
+.pay-opt input:checked ~ .pay-check svg { opacity: 1; }
+.pay-opt:has(input:checked) { border-color: var(--primary); background: rgba(249,153,5,0.08); }
 .submit-btn { width: 100%; margin-top: 28px; background: var(--primary); color: var(--dark); font-family: 'Oswald', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 16px; border-radius: 10px; border: none; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .submit-btn:hover { background: #e88a00; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(249,153,5,0.35); }
 .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
@@ -1021,6 +1035,27 @@ footer { background: #111; border-top: 1px solid var(--border); padding: 56px 24
                 <option value="Készpénz" data-hu="Készpénz" data-en="Cash">Készpénz</option>
               </select>
             </div>
+            <div class="form-field full">
+              <label><span data-hu="Hogyan szeretnéd ütemezni a fizetést?" data-en="When would you like to pay?">Hogyan szeretnéd ütemezni a fizetést?</span> <span class="req">*</span></label>
+              <div class="pay-timing">
+                <label class="pay-opt">
+                  <input type="radio" name="paymentTiming" value="Foglalóval (50% előleg)" checked onchange="updatePayTimingUI()">
+                  <span class="pay-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                  <span class="pay-body">
+                    <span class="pay-title" data-hu="Foglalóval" data-en="With deposit">Foglalóval</span>
+                    <span class="pay-desc" data-hu="50% előleg most, a maradék a helyszínen" data-en="50% deposit now, the rest on arrival">50% előleg most, a maradék a helyszínen</span>
+                  </span>
+                </label>
+                <label class="pay-opt">
+                  <input type="radio" name="paymentTiming" value="Egy összegben" onchange="updatePayTimingUI()">
+                  <span class="pay-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                  <span class="pay-body">
+                    <span class="pay-title" data-hu="Egy összegben" data-en="Full amount">Egy összegben</span>
+                    <span class="pay-desc" data-hu="A teljes összeget egyben rendezem" data-en="I'll pay the full amount at once">A teljes összeget egyben rendezem</span>
+                  </span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <div class="form-section-title"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> <span data-hu="Dokumentumok" data-en="Documents">Dokumentumok</span></div>
@@ -1048,11 +1083,29 @@ footer { background: #111; border-top: 1px solid var(--border); padding: 56px 24
           </div>
           <input type="text" name="website" id="website" style="display:none;" tabindex="-1" autocomplete="off">
           <div class="form-checkbox"><input type="checkbox" id="consent" required><label for="consent"><span data-hu="Elolvastam és elfogadom a " data-en="I have read and accept the ">Elolvastam és elfogadom a </span><a href="#" onclick="showPage('rules')" data-hu="házirendet és a felelősségvállalási nyilatkozatot" data-en="house rules and liability declaration">házirendet és a felelősségvállalási nyilatkozatot</a><span data-hu=". Az adataim kezeléséhez hozzájárulok." data-en=". I consent to the processing of my data.">. Az adataim kezeléséhez hozzájárulok.</span></label></div>
-          <button class="submit-btn" id="submitBtn" onclick="submitForm()">
-            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            <span data-hu="Foglalási kérelem küldése" data-en="Send Booking Request">Foglalási kérelem küldése</span>
+          <button class="submit-btn" id="submitBtn" onclick="reviewForm()">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            <span data-hu="Tovább – adatok ellenőrzése" data-en="Continue – review details">Tovább – adatok ellenőrzése</span>
           </button>
         </div>
+
+        <!-- ELLENŐRZŐ / MEGERŐSÍTŐ NÉZET -->
+        <div id="formReview" style="display:none;">
+          <div class="form-section-title"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> <span data-hu="Kérjük, ellenőrizd az adatokat" data-en="Please check your details">Kérjük, ellenőrizd az adatokat</span></div>
+          <p style="color:rgba(255,255,255,0.6);font-size:0.9rem;margin:0 0 8px;" data-hu="Küldés előtt nézd át a megadott adatokat. Ha valami nem stimmel, lépj vissza és javítsd." data-en="Please review your details before sending. If something is off, go back and edit.">Küldés előtt nézd át a megadott adatokat. Ha valami nem stimmel, lépj vissza és javítsd.</p>
+          <div id="reviewBody"></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;">
+            <button type="button" class="btn-outline" onclick="backToForm()" style="flex:1;min-width:160px;justify-content:center;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              <span data-hu="Vissza / Módosítás" data-en="Back / Edit">Vissza / Módosítás</span>
+            </button>
+            <button type="button" class="submit-btn" id="confirmBtn" onclick="confirmSubmit()" style="flex:2;min-width:200px;margin-top:0;">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              <span data-hu="Megerősítés és küldés" data-en="Confirm & Send">Megerősítés és küldés</span>
+            </button>
+          </div>
+        </div>
+
         <div class="form-success" id="formSuccess">
           <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           <h3 data-hu="Köszönjük a jelentkezést!" data-en="Thank you for your enquiry!">Köszönjük a jelentkezést!</h3>
@@ -1803,7 +1856,7 @@ function getPerDayPackagesSummary(){
     }
     const disc=DOG_DISCOUNTS[g];
     const discounted=Math.round(sub*(1-disc));
-    let summary=(g+1)+'. kutya ('+dogName+'): '+lines.join(', ')+' — Részösszeg: '+sub.toLocaleString('hu-HU')+' Ft';
+    let summary=(g+1)+'. kutya ('+dogName+'): \n'+lines.join(',\n')+' \n— Részösszeg: '+sub.toLocaleString('hu-HU')+' Ft';
     if(disc>0)summary+=' − '+Math.round(disc*100)+'% kedvezmény = '+discounted.toLocaleString('hu-HU')+' Ft';
     dogSummaries.push(summary);
   }
@@ -1843,7 +1896,18 @@ function transferCalcToBooking(){
   showToast(lang==='hu'?'\u2713 A kalkulátor adatai átkerültek a foglalási űrlapba!':'\u2713 Calculator details transferred to the booking form!');
 }
 
-function submitForm(){
+function updatePayTimingUI(){
+  // Vizuális visszajelzés a kiválasztott ütemezésre (a kártya kiemelését a CSS kezeli).
+  // A becsült összeg dobozban a foglaló sort finoman kiemeljük/halványítjuk.
+  const timing=document.querySelector('input[name="paymentTiming"]:checked')?.value||'';
+  const dep=document.getElementById('bookingDeposit');
+  if(dep&&dep.parentElement){dep.parentElement.style.opacity=(timing==='Egy összegben')?'0.45':'1';}
+}
+
+function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// Közös validáció — true, ha minden kötelező mező rendben van.
+function validateBooking(){
   const name=document.getElementById('ownerName').value.trim();
   const phone=document.getElementById('ownerPhone').value.trim();
   const email=document.getElementById('ownerEmail').value.trim();
@@ -1853,28 +1917,123 @@ function submitForm(){
   const dateFrom=document.getElementById('dateFrom').value;
   const vaccR=document.getElementById('vaccRabies').value;
   const vaccC=document.getElementById('vaccCombo').value;
-  const chipVal=document.getElementById('dogChip').value.replace(/\D/g,'');
-  if(chipVal.length>0&&chipVal.length<15){showToast(lang==='hu'?'A chip számnak 15 számjegyűnek kell lennie!':'Microchip number must be 15 digits!');return;}
-  if(!bookFromSel||!bookToSel){showToast(lang==='hu'?'Kérjük válassz érkezési és távozási dátumot!':'Please select arrival and departure dates!');return;}
-  if(bookToSel<=bookFromSel){showToast(lang==='hu'?'A távozás dátuma nem lehet korábbi mint az érkezés!':'Departure cannot be before arrival!');return;}
-  if(!name||!phone||!email||!dogName||!dogBreed){showToast(lang==='hu'?'Kérjük töltsd ki a kötelező mezőket!':'Please fill in all required fields!');return;}
-  if(!vaccR||!vaccC){showToast(lang==='hu'?'Az oltási dátumok megadása kötelező!':'Vaccination dates are required!');return;}
-  if(!dateFrom){showToast(lang==='hu'?'Kérjük válassz időpontot!':'Please select dates!');return;}
-  const payMethod=document.getElementById('paymentMethod')?.value||'';
-  if(!payMethod){showToast(lang==='hu'?'Kérjük válassz fizetési módot!':'Please select a payment method!');return;}
-  if(!consent){showToast(lang==='hu'?'Kérjük fogadd el a szabályzatot!':'Please accept the house rules!');return;}
-  for(let g=1;g<bookDogCount;g++){
-    const gv=id=>{const el=document.getElementById(id+'_'+g);return el?el.value.trim():'';};
-    if(!gv('dogName')||!gv('dogBreed')){showToast(lang==='hu'?('Kérjük töltsd ki a '+(g+1)+'. kutya kötelező mezőit!'):('Please fill in the required fields for dog '+(g+1)+'!'));return;}
-    if(!gv('vaccRabies')||!gv('vaccCombo')){showToast(lang==='hu'?('Kérjük add meg a '+(g+1)+'. kutya oltási dátumait!'):('Please provide vaccination dates for dog '+(g+1)+'!'));return;}
-    const chi=gv('dogChip').replace(/\D/g,'');
-    if(chi.length>0&&chi.length<15){showToast(lang==='hu'?('A '+(g+1)+'. kutya chip számának 15 számjegyűnek kell lennie!'):('Microchip number for dog '+(g+1)+' must be 15 digits!'));return;}
-  }
-  const btn=document.getElementById('submitBtn');btn.disabled=true;
-  btn.innerHTML='<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--dark);fill:none;animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span>'+(lang==='hu'?'Küldés...':'Sending...')+'</span>';
   const emergencyName=document.getElementById('emergencyName')?.value.trim()||'';
   const emergencyPhone=document.getElementById('emergencyPhone')?.value.trim()||'';
-  if(!emergencyName||!emergencyPhone){showToast(lang==='hu'?'Kérjük add meg a vészhelyzeti kapcsolattartó adatait!':'Please provide emergency contact details!');return;}
+  const chipVal=document.getElementById('dogChip').value.replace(/\D/g,'');
+  if(chipVal.length>0&&chipVal.length<15){showToast(lang==='hu'?'A chip számnak 15 számjegyűnek kell lennie!':'Microchip number must be 15 digits!');return false;}
+  if(!bookFromSel||!bookToSel){showToast(lang==='hu'?'Kérjük válassz érkezési és távozási dátumot!':'Please select arrival and departure dates!');return false;}
+  if(bookToSel<=bookFromSel){showToast(lang==='hu'?'A távozás dátuma nem lehet korábbi mint az érkezés!':'Departure cannot be before arrival!');return false;}
+  if(!name||!phone||!email||!dogName||!dogBreed){showToast(lang==='hu'?'Kérjük töltsd ki a kötelező mezőket!':'Please fill in all required fields!');return false;}
+  if(!emergencyName||!emergencyPhone){showToast(lang==='hu'?'Kérjük add meg a vészhelyzeti kapcsolattartó adatait!':'Please provide emergency contact details!');return false;}
+  if(!vaccR||!vaccC){showToast(lang==='hu'?'Az oltási dátumok megadása kötelező!':'Vaccination dates are required!');return false;}
+  if(!dateFrom){showToast(lang==='hu'?'Kérjük válassz időpontot!':'Please select dates!');return false;}
+  const payMethod=document.getElementById('paymentMethod')?.value||'';
+  if(!payMethod){showToast(lang==='hu'?'Kérjük válassz fizetési módot!':'Please select a payment method!');return false;}
+  if(!document.querySelector('input[name="paymentTiming"]:checked')){showToast(lang==='hu'?'Kérjük válaszd ki a fizetés ütemezését!':'Please select a payment schedule!');return false;}
+  if(!consent){showToast(lang==='hu'?'Kérjük fogadd el a szabályzatot!':'Please accept the house rules!');return false;}
+  for(let g=1;g<bookDogCount;g++){
+    const gv=id=>{const el=document.getElementById(id+'_'+g);return el?el.value.trim():'';};
+    if(!gv('dogName')||!gv('dogBreed')){showToast(lang==='hu'?('Kérjük töltsd ki a '+(g+1)+'. kutya kötelező mezőit!'):('Please fill in the required fields for dog '+(g+1)+'!'));return false;}
+    if(!gv('vaccRabies')||!gv('vaccCombo')){showToast(lang==='hu'?('Kérjük add meg a '+(g+1)+'. kutya oltási dátumait!'):('Please provide vaccination dates for dog '+(g+1)+'!'));return false;}
+    const chi=gv('dogChip').replace(/\D/g,'');
+    if(chi.length>0&&chi.length<15){showToast(lang==='hu'?('A '+(g+1)+'. kutya chip számának 15 számjegyűnek kell lennie!'):('Microchip number for dog '+(g+1)+' must be 15 digits!'));return false;}
+  }
+  return true;
+}
+
+// Egy összefoglaló szekció HTML-je (cím + kulcs/érték párok).
+function reviewSection(title,rows){
+  let html='<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;">';
+  html+='<div style="font-family:Oswald,sans-serif;font-size:0.8rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--primary);margin-bottom:10px;">'+escHtml(title)+'</div>';
+  rows.forEach(r=>{
+    if(r[1]==null||r[1]==='')return;
+    html+='<div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.9rem;">'
+      +'<div style="flex:0 0 42%;color:rgba(255,255,255,0.5);">'+escHtml(r[0])+'</div>'
+      +'<div style="flex:1;color:rgba(255,255,255,0.9);">'+escHtml(r[1])+'</div></div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+function buildReviewHTML(){
+  const val=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const sel=id=>{const el=document.getElementById(id);return el&&el.selectedIndex>=0?el.options[el.selectedIndex].text:'';};
+  const L=(hu,en)=>lang==='hu'?hu:en;
+  const nd=L('Nincs megadva','Not provided');
+  let html='';
+  html+=reviewSection(L('Gazda adatai','Owner details'),[
+    [L('Teljes név','Full name'),val('ownerName')],
+    [L('Telefonszám','Phone'),val('ownerPhone')],
+    [L('Email','Email'),val('ownerEmail')],
+    [L('Lakcím','Address'),val('Address')],
+  ]);
+  html+=reviewSection(L('Vészhelyzeti kapcsolattartó','Emergency contact'),[
+    [L('Név','Name'),val('emergencyName')],
+    [L('Telefonszám','Phone'),val('emergencyPhone')],
+    [L('Kapcsolat','Relation'),val('emergencyRelation')||nd],
+  ]);
+  const dogRows=(pfx,idx)=>{
+    const g=id=>idx===0?val(id):((document.getElementById(id+'_'+idx)||{}).value||'').trim();
+    const gsel=id=>{const el=document.getElementById(idx===0?id:id+'_'+idx);return el&&el.selectedIndex>=0?el.options[el.selectedIndex].text:'';};
+    return reviewSection((g('dogName')||L('Kutya','Dog'))+(bookDogCount>1?(' ('+(idx+1)+'.)'):''),[
+      [L('Fajta','Breed'),g('dogBreed')],
+      [L('Kor','Age'),g('dogAge')||nd],
+      [L('Nem','Gender'),gsel('dogGender')],
+      [L('Ivartalanított','Neutered'),gsel('dogNeutered')],
+      [L('Chip','Microchip'),g('dogChip')||nd],
+      [L('Etetés','Food'),gsel('dogFoodType')+(g('dogFoodAmount')?(' – '+g('dogFoodAmount')+' g/nap'):'')],
+      [L('Veszettség oltás','Rabies vaccine'),g('vaccRabies')],
+      [L('Kombinált oltás','Combined vaccine'),g('vaccCombo')],
+      [L('Féreghajtó','Wormer'),(idx===0?val('Wormer'):g('Wormer'))+((idx===0?val('wormerDate'):g('wormerDate'))?(' ('+(idx===0?val('wormerDate'):g('wormerDate'))+')'):'')],
+    ]);
+  };
+  for(let i=0;i<bookDogCount;i++)html+=dogRows('',i);
+  const t=getBookingTotals();
+  const timing=document.querySelector('input[name="paymentTiming"]:checked')?.value||'';
+  html+=reviewSection(L('Foglalás & fizetés','Booking & payment'),[
+    [L('Érkezés','Arrival'),val('dateFrom')],
+    [L('Távozás','Departure'),val('dateTo')||nd],
+    [L('Becsült végösszeg','Estimated total'),(t.grandTotal||0).toLocaleString('hu-HU')+' Ft'],
+    [L('Foglaló (50%)','Deposit (50%)'),(t.deposit||0).toLocaleString('hu-HU')+' Ft'],
+    [L('Fizetés ütemezése','Payment schedule'),timing],
+    [L('Fizetési mód','Payment method'),sel('paymentMethod')],
+  ]);
+  const nFiles=(bookletFiles?bookletFiles.length:0)+(photoFiles?photoFiles.length:0);
+  html+=reviewSection(L('Dokumentumok','Documents'),[
+    [L('Feltöltött fájlok','Uploaded files'),nFiles?(nFiles+' '+L('db','file(s)')):nd],
+  ]);
+  return html;
+}
+
+function reviewForm(){
+  if(!validateBooking())return;
+  document.getElementById('reviewBody').innerHTML=buildReviewHTML();
+  document.getElementById('formContent').style.display='none';
+  document.getElementById('formReview').style.display='block';
+  window.scrollTo({top:document.querySelector('.booking-form').offsetTop-80,behavior:'smooth'});
+}
+
+function backToForm(){
+  document.getElementById('formReview').style.display='none';
+  document.getElementById('formContent').style.display='block';
+  window.scrollTo({top:document.querySelector('.booking-form').offsetTop-80,behavior:'smooth'});
+}
+
+function confirmSubmit(){
+  const name=document.getElementById('ownerName').value.trim();
+  const phone=document.getElementById('ownerPhone').value.trim();
+  const email=document.getElementById('ownerEmail').value.trim();
+  const dogName=document.getElementById('dogName').value.trim();
+  const dogBreed=document.getElementById('dogBreed').value.trim();
+  const dateFrom=document.getElementById('dateFrom').value;
+  const vaccR=document.getElementById('vaccRabies').value;
+  const vaccC=document.getElementById('vaccCombo').value;
+  const payMethod=document.getElementById('paymentMethod')?.value||'';
+  const payTiming=document.querySelector('input[name="paymentTiming"]:checked')?.value||'';
+  const emergencyName=document.getElementById('emergencyName')?.value.trim()||'';
+  const emergencyPhone=document.getElementById('emergencyPhone')?.value.trim()||'';
+  const btn=document.getElementById('confirmBtn');btn.disabled=true;
+  btn.innerHTML='<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--dark);fill:none;animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span>'+(lang==='hu'?'Küldés...':'Sending...')+'</span>';
   const dateTo=document.getElementById('dateTo').value;
   const pkgEl=document.getElementById('bookingPkg');
   const pkgText=pkgEl?pkgEl.options[pkgEl.selectedIndex]?.text:'';
@@ -1912,6 +2071,7 @@ function submitForm(){
   fd.append('deposit',String(_t.deposit));
   fd.append('remainder',String(_t.remainder));
   fd.append('paymentMethod',payMethod);
+  fd.append('paymentTiming',payTiming);
   const extraParts=[];
   for(let g=1;g<bookDogCount;g++){
     const gv=id=>{const el=document.getElementById(id+'_'+g);return el?el.value.trim():'';};
@@ -1940,21 +2100,25 @@ function submitForm(){
   // Fájlok hozzáadása a FormData-hoz
   bookletFiles.forEach((f,i)=>fd.append('booklet_'+i,f,f.name));
   photoFiles.forEach((f,i)=>fd.append('photo_'+i,f,f.name));
+  const resetConfirmBtn=()=>{
+    const b=document.getElementById('confirmBtn');b.disabled=false;
+    b.innerHTML='<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--dark);fill:none;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>'+(lang==='hu'?'Megerősítés és küldés':'Confirm & Send')+'</span>';
+  };
   fetch('https://blaya.hu/send.php',{method:'POST',body:fd})
   .then(r=>r.json())
   .then(res=>{
     if(res.success){
       document.getElementById('formContent').style.display='none';
+      document.getElementById('formReview').style.display='none';
       document.getElementById('formSuccess').style.display='block';
+      window.scrollTo({top:document.querySelector('.booking-form').offsetTop-80,behavior:'smooth'});
     } else {
-      const btn=document.getElementById('submitBtn');btn.disabled=false;
-      btn.innerHTML='<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--dark);fill:none;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>'+(lang==='hu'?'Foglalási kérelem küldése':'Send Booking Request')+'</span>';
+      resetConfirmBtn();
       showToast(lang==='hu'?'Hiba történt, kérjük próbáld újra!':'An error occurred, please try again!');
     }
   })
   .catch(()=>{
-    const btn=document.getElementById('submitBtn');btn.disabled=false;
-    btn.innerHTML='<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--dark);fill:none;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>'+(lang==='hu'?'Foglalási kérelem küldése':'Send Booking Request')+'</span>';
+    resetConfirmBtn();
     showToast(lang==='hu'?'Hiba történt, kérjük próbáld újra!':'An error occurred, please try again!');
   });
 }
