@@ -199,6 +199,7 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgb
 .price-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 36px 28px; position: relative; overflow: hidden; }
 .price-card.featured { border-color: var(--primary); background: linear-gradient(135deg, #1e1e1e 0%, #242010 100%); }
 .price-card.featured::before { content: 'NÉPSZERŰ'; position: absolute; top: 16px; right: -28px; background: var(--primary); color: var(--dark); font-family: 'Oswald', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 2px; padding: 4px 40px; transform: rotate(45deg); }
+html[lang="en"] .price-card.featured::before { content: 'POPULAR'; }
 .price-card h3 { font-family: 'Oswald', sans-serif; font-size: 1.1rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 .price-card .amount { font-family: 'Oswald', sans-serif; font-size: 2.8rem; font-weight: 700; color: var(--white); line-height: 1; }
 .price-card .amount span { font-size: 1rem; color: rgba(255,255,255,0.5); }
@@ -823,7 +824,7 @@ footer { background: #111; border-top: 1px solid var(--border); padding: 56px 24
             <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span data-hu="Egészséges, tünetmentes kutya" data-en="Healthy, symptom-free dog">Egészséges, tünetmentes kutya</span></li>
             <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span data-hu="Kötelező veszettség elleni oltás – legalább 14 nappal az érkezés előtt beadva" data-en="Mandatory rabies vaccination – given at least 14 days before arrival">Kötelező veszettség elleni oltás – legalább 14 nappal az érkezés előtt beadva</span></li>
             <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span data-hu="Kombinált oltás megléte" data-en="Combined vaccination required">Kombinált oltás megléte</span></li>
-            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span data-hu="Rendszeres féreghajtás" data-en="Regular deworming">Rendszeres féreghajtás</span></li>
+            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span data-hu="Rendszeres féreghajtás – legfeljebb 3 hónappal az érkezés előtt" data-en="Regular deworming – within 3 months before arrival">Rendszeres féreghajtás – legfeljebb 3 hónappal az érkezés előtt</span></li>
             <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span data-hu="Külső paraziták elleni kezelés" data-en="External parasite treatment">Külső paraziták elleni kezelés</span></li>
           </ul>
         </div>
@@ -1043,7 +1044,7 @@ footer { background: #111; border-top: 1px solid var(--border); padding: 56px 24
                   <span class="pay-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
                   <span class="pay-body">
                     <span class="pay-title" data-hu="Foglalóval" data-en="With deposit">Foglalóval</span>
-                    <span class="pay-desc" data-hu="50% előleg most, a maradék a helyszínen" data-en="50% deposit now, the rest on arrival">50% előleg most, a maradék a helyszínen</span>
+                    <span class="pay-desc" data-hu="50% előleg most" data-en="50% deposit now">50% előleg most</span>
                   </span>
                 </label>
                 <label class="pay-opt">
