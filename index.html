@@ -538,6 +538,61 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
 /* Utility */
 .text-center { text-align: center; }
 .mt-24 { margin-top: 24px; }
+
+/* ─── BOOKING PROGRESS STEPPER ─── */
+.booking-stepper-layout { display: block; }
+#bookingStepper { position: fixed; left: max(16px, calc(50vw - 662px)); top: 50%; transform: translateY(-50%); width: 200px; padding: 4px 0; z-index: 55; }
+#bookingStepper.bstep-hidden { display: none; }
+.bstep-head { font-family: 'Oswald', sans-serif; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); margin-bottom: 16px; }
+.bstep-list { list-style: none; margin: 0; padding: 0; }
+.bstep { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.bstep-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.45); display: flex; align-items: center; justify-content: center; font-family: 'Oswald', sans-serif; font-size: 0.8rem; flex-shrink: 0; transition: all .25s; }
+.bstep-tick { display: none; width: 14px; height: 14px; stroke: #141414; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.bstep.done .bstep-dot { background: var(--primary); border-color: var(--primary); }
+.bstep.done .bstep-num { display: none; }
+.bstep.done .bstep-tick { display: block; }
+.bstep.active:not(.done) .bstep-dot { border-color: var(--primary); color: var(--primary); }
+.bstep-label { font-size: 0.88rem; color: rgba(255,255,255,0.5); transition: color .25s; }
+.bstep.active .bstep-label { color: #fff; font-weight: 600; }
+.bstep.done:not(.active) .bstep-label { color: rgba(255,255,255,0.75); }
+.bstep-line { width: 0; border-left: 2px dashed rgba(255,255,255,0.18); min-height: 22px; margin: 4px 0 4px 12px; }
+.bstep-line.done { border-left-color: var(--primary); }
+.bstep-dogs { margin: 6px 0 2px; padding: 0 0 0 40px; }
+.bstep-dogs ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.bstep-dog { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: rgba(255,255,255,0.45); }
+.bstep-dog-dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .25s; }
+.bstep-dog-dot svg { width: 9px; height: 9px; stroke: #141414; fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.bstep-dog.done { color: #fff; }
+.bstep-dog.done .bstep-dog-dot { background: var(--primary); border-color: var(--primary); }
+.bstep-dog.done .bstep-dog-dot svg { opacity: 1; }
+@media(max-width:1299px){
+  .booking-stepper-layout { display: block; }
+  #bookingStepper { position: sticky; left: auto; transform: none; top: 76px; width: auto; max-width: 860px; z-index: 50; background: rgba(20,20,20,0.97); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px; margin: 0 auto 18px; }
+  .bstep-head { display: none; }
+  .bstep-list { display: flex; align-items: center; }
+  .bstep { gap: 8px; }
+  .bstep-label { display: none; }
+  .bstep.active .bstep-label { display: inline; font-size: 0.8rem; white-space: nowrap; }
+  .bstep-line { border-left: none; border-top: 2px dashed rgba(255,255,255,0.18); min-height: 0; width: auto; flex: 1; margin: 0 8px; }
+  .bstep-line.done { border-top-color: var(--primary); }
+  .bstep-dogs { display: none; }
+}
+/* invalid (filled) field highlight + inline error message */
+.form-field input.bs-invalid, .form-field select.bs-invalid, .form-field textarea.bs-invalid { border-color: rgba(255,107,74,0.85) !important; }
+.field-error { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; font-size: 0.78rem; line-height: 1.4; color: #ff6b4a; }
+.field-error svg { width: 14px; height: 14px; stroke: #ff6b4a; fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 1px; }
+/* stepper tooltips (desktop hover only) */
+.bstep, .bstep-dog { position: relative; }
+.bstep-tip { display: none; position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); background: #1e1e1e; border: 1px solid rgba(249,153,5,0.4); border-radius: 10px; padding: 10px 14px; width: max-content; max-width: 250px; z-index: 60; box-shadow: 0 8px 24px rgba(0,0,0,0.5); font-size: 0.78rem; color: rgba(255,255,255,0.85); pointer-events: none; }
+.bstep-tip-head { font-family: 'Oswald', sans-serif; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; color: var(--primary); margin-bottom: 6px; white-space: nowrap; }
+.bstep-tip ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.bstep-tip li { position: relative; padding-left: 12px; }
+.bstep-tip li::before { content: ''; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.35); }
+.bstep-tip li em { font-style: normal; color: #ff6b4a; }
+.bstep-tip-ok { color: var(--primary); white-space: nowrap; }
+@media(hover:hover) and (min-width:1300px){
+  .bstep:hover .bstep-tip, .bstep-dog:hover .bstep-tip { display: block; }
+}
 </style>
 </head>
 <body>
@@ -1012,9 +1067,14 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
         <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--primary);fill:none;flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <p style="font-size:0.92rem;line-height:1.6;color:rgba(255,255,255,0.85);margin:0;"><strong style="color:var(--primary);" data-hu="Fontos tudnivaló:" data-en="Important:">Fontos tudnivaló:</strong> <span data-hu="A foglalási kérelem leadása önmagában nem jelenti a foglalás véglegesítését. A foglalás az előzetes egyeztetést követően, a foglaló összegének befizetésével válik véglegessé." data-en="Submitting the booking request does not confirm your booking. The booking is only finalised once the deposit has been paid following our initial consultation.">A foglalási kérelem leadása önmagában nem jelenti a foglalás véglegesítését. A foglalás az előzetes egyeztetést követően, a foglaló összegének befizetésével válik véglegessé.</span></p>
       </div>
+      <div class="booking-stepper-layout">
+      <aside id="bookingStepper" aria-label="Foglalás folyamata">
+        <div class="bstep-head" data-hu="Foglalás menete" data-en="Booking progress">Foglalás menete</div>
+        <ol class="bstep-list" id="bstepList"></ol>
+      </aside>
       <div class="booking-form">
         <div id="formContent">
-          <div class="form-section-title"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-hu="Gazda adatai" data-en="Owner Details">Gazda adatai</span></div>
+          <div class="form-section-title" id="bsAnchorOwner"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-hu="Gazda adatai" data-en="Owner Details">Gazda adatai</span></div>
           <div class="form-grid">
             <div class="form-field"><label><span data-hu="Teljes név" data-en="Full name">Teljes név</span> <span class="req">*</span></label><input type="text" id="ownerName" placeholder="pl. Kovács Anna" maxlength="50" oninput="this.value=this.value.replace(/[0-9]/g,'')"></div>
             <div class="form-field"><label><span data-hu="Lakcím" data-en="Address">Lakcím</span> <span class="req">*</span></label><input type="text" id="Address" placeholder="pl. Baja, Kossuth utca 7"></div>
@@ -1033,7 +1093,7 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
             <div class="form-field"><label><span data-hu="Kapcsolat a gazdával" data-en="Relation to owner">Kapcsolat a gazdával</span></label><input type="text" id="emergencyRelation" placeholder="pl. anyukám, barátom" maxlength="50"></div>
           </div>
           <!-- PACKAGE + DATE + PER-DAY SELECTOR -->
-          <div class="form-section-title">
+          <div class="form-section-title" id="bsAnchorDates">
             <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--primary);fill:none;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span data-hu="Időpont &amp; Csomagok" data-en="Dates &amp; Packages">Időpont &amp; Csomagok</span>
           </div>
@@ -1093,7 +1153,7 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
             <p style="font-size:0.78rem;color:rgba(255,255,255,0.45);margin-top:10px;" data-hu="Több kutya esetén kedvezmény: 2. kutya −5%, 3. kutya −10%, 4. kutya −15%. (Maximum 4 kutya.) A kutyák adatait lentebb, a Viselkedés szekció alatt tudod megadni." data-en="Multi-dog discount: 2nd dog −5%, 3rd dog −10%, 4th dog −15%. (Maximum 4 dogs.) You can add each dog's details further below, under the Behavior section.">Több kutya esetén kedvezmény: 2. kutya −5%, 3. kutya −10%, 4. kutya −15%. (Maximum 4 kutya.) A kutyák adatait lentebb, a Viselkedés szekció alatt tudod megadni.</p>
           </div>
 
-          <div class="form-section-title"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--primary);fill:none;flex-shrink:0;"><ellipse cx="12" cy="9" rx="4" ry="3"/><path d="M6 9c-2 0-3 1-3 3s1 4 3 4"/><path d="M18 9c2 0 3 1 3 3s-1 4-3 4"/><path d="M8 16v2c0 1 .9 2 2 2h4c1.1 0 2-.9 2-2v-2"/><circle cx="9" cy="7" r="1" fill="var(--primary)"/><circle cx="15" cy="7" r="1" fill="var(--primary)"/></svg> <span id="dogTitle_0" data-hu="Kutya adatai" data-en="Dog Details">Kutya adatai</span></div>
+          <div class="form-section-title" id="bsAnchorDogs"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--primary);fill:none;flex-shrink:0;"><ellipse cx="12" cy="9" rx="4" ry="3"/><path d="M6 9c-2 0-3 1-3 3s1 4 3 4"/><path d="M18 9c2 0 3 1 3 3s-1 4-3 4"/><path d="M8 16v2c0 1 .9 2 2 2h4c1.1 0 2-.9 2-2v-2"/><circle cx="9" cy="7" r="1" fill="var(--primary)"/><circle cx="15" cy="7" r="1" fill="var(--primary)"/></svg> <span id="dogTitle_0" data-hu="Kutya adatai" data-en="Dog Details">Kutya adatai</span></div>
           <div class="form-grid">
             <div class="form-field"><label><span data-hu="Kutya neve" data-en="Dog's name">Kutya neve</span> <span class="req">*</span></label><input type="text" id="dogName" placeholder="pl. Max" oninput="updateDogTitles()"></div>
             <div class="form-field"><label><span data-hu="Fajta" data-en="Breed">Fajta</span> <span class="req">*</span></label><input type="text" id="dogBreed" placeholder="pl. Husky"></div>
@@ -1161,7 +1221,7 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
           </div>
 
           <!-- PAYMENT METHOD -->
-          <div class="form-section-title"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <span data-hu="Fizetési mód" data-en="Payment Method">Fizetési mód</span></div>
+          <div class="form-section-title" id="bsAnchorPay"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <span data-hu="Fizetési mód" data-en="Payment Method">Fizetési mód</span></div>
           <div class="form-grid">
             <div class="form-field full">
               <label><span data-hu="Hogyan szeretnéd rendezni a fizetést?" data-en="How would you like to pay?">Hogyan szeretnéd rendezni a fizetést?</span> <span class="req">*</span></label>
@@ -1195,7 +1255,7 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
             </div>
           </div>
 
-          <div class="form-section-title"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> <span data-hu="Dokumentumok" data-en="Documents">Dokumentumok</span></div>
+          <div class="form-section-title" id="bsAnchorDocs"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> <span data-hu="Dokumentumok" data-en="Documents">Dokumentumok</span></div>
           <div class="form-grid">
             <div class="form-field full">
               <label><span data-hu="Kiskönyv / oltási dokumentáció" data-en="Vaccination record (optional)">Kiskönyv / oltási dokumentáció</span> <span class="req">*</span></label>
@@ -1248,6 +1308,7 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
           <h3 data-hu="Köszönjük a jelentkezést!" data-en="Thank you for your enquiry!">Köszönjük a jelentkezést!</h3>
           <p data-hu="Amint lehet, személyesen visszajelzünk arról, hogy tudjuk-e vállalni a kutyust. Köszönjük a bizalmat!" data-en="We'll get back to you personally as soon as possible. Thank you for your trust!">Amint lehet, személyesen visszajelzünk arról, hogy tudjuk-e vállalni a kutyust. Köszönjük a bizalmat!</p>
         </div>
+      </div>
       </div>
     </div>
   </section>
@@ -1373,7 +1434,7 @@ footer { background: #111; border-top: 1px solid var(--hairline); padding: var(-
 </div>
 
 <script>
-function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));const t=document.getElementById('page-'+name);if(t)t.classList.add('active');window.scrollTo(0,0);if(name==='faq')buildFaq(); if(name==='gallery')loadGallery();updateNavIndicator(name);return false;}
+function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));const t=document.getElementById('page-'+name);if(t)t.classList.add('active');window.scrollTo(0,0);if(name==='faq')buildFaq(); if(name==='gallery')loadGallery();updateNavIndicator(name);if(typeof updateBookingStepper==='function')updateBookingStepper();return false;}
 function currentPageName(){const p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'home';}
 function updateNavIndicator(name){
   const ul=document.getElementById('navLinks');
@@ -1416,6 +1477,7 @@ function toggleLang(){
   if(typeof calcFromSel!=='undefined'&&calcFromSel&&calcToSel)buildCalcTable(true);
   if(typeof bookFromSel!=='undefined'&&bookFromSel&&bookToSel)buildPerDayTable(true);
   if(typeof bookDogCount!=='undefined')updateDogTitles();
+  if(typeof updateBookingStepper==='function')updateBookingStepper();
   if(window.enhanceCustomSelects)window.enhanceCustomSelects();
   if(window.refreshCustomSelects)window.refreshCustomSelects();
   if(window.enhanceDatePickers)window.enhanceDatePickers();
@@ -2712,6 +2774,218 @@ function toggleFaq(idx){
     for(var i=0;i<muts.length;i++){ if(muts[i].addedNodes.length){ if(!sched){ sched=true; setTimeout(function(){ sched=false; window.enhanceDatePickers(); },0); } break; } }
   }).observe(document.body,{childList:true,subtree:true});
   window.enhanceDatePickers();
+})();
+
+// ─── BOOKING PROGRESS STEPPER (left rail / mobile bar) ───
+const BSTEPS=[
+  {key:'owner',anchor:'bsAnchorOwner',hu:'Kapcsolat',en:'Contact'},
+  {key:'dates',anchor:'bsAnchorDates',hu:'Időpont & csomagok',en:'Dates & packages'},
+  {key:'dogs',anchor:'bsAnchorDogs',hu:'Kutyák adatai',en:'Dog details'},
+  {key:'pay',anchor:'bsAnchorPay',hu:'Fizetési mód',en:'Payment'},
+  {key:'docs',anchor:'bsAnchorDocs',hu:'Dokumentumok & küldés',en:'Documents & submit'}
+];
+const BS_DOG_REQ=['dogName','dogBreed','dogGender','dogNeutered','dogChip','dogFoodType','dogFoodAmount','vaccRabies','vaccCombo','Wormer','wormerDate','dogIllness','dogMeds'];
+let bsActive=0,bsLastCount=0,bsLastLang='',bsTimer=null,bsScrollT=null;
+
+const BS_FIELD_LABELS={
+  ownerName:{hu:'Teljes név',en:'Full name'},Address:{hu:'Lakcím',en:'Address'},ownerPhone:{hu:'Telefonszám',en:'Phone number'},ownerEmail:{hu:'Email cím',en:'Email address'},emergencyName:{hu:'Kapcsolattartó neve',en:'Contact name'},emergencyPhone:{hu:'Kapcsolattartó telefonszáma',en:'Contact phone'},
+  dateFrom:{hu:'Érkezés dátuma',en:'Arrival date'},dateTo:{hu:'Távozás dátuma',en:'Departure date'},
+  dogName:{hu:'Kutya neve',en:"Dog's name"},dogBreed:{hu:'Fajta',en:'Breed'},dogGender:{hu:'Nem',en:'Gender'},dogNeutered:{hu:'Ivartalanított?',en:'Neutered?'},dogChip:{hu:'Chip száma',en:'Microchip number'},dogFoodType:{hu:'Etetés típusa',en:'Food type'},dogFoodAmount:{hu:'Napi adag (gramm)',en:'Daily portion (g)'},vaccRabies:{hu:'Veszettség oltás dátuma',en:'Rabies vaccination date'},vaccCombo:{hu:'Kombinált oltás dátuma',en:'Combined vaccination date'},Wormer:{hu:'Féreghajtó neve',en:"Wormer's brand"},wormerDate:{hu:'Féreghajtó dátuma',en:"Wormer's date"},dogIllness:{hu:'Betegség megadása',en:'Medical conditions'},dogMeds:{hu:'Gyógyszer megadása',en:'Medication'},
+  paymentMethod:{hu:'Fizetési mód',en:'Payment method'},
+  dogBooklet:{hu:'Kiskönyv feltöltése',en:'Vaccination record upload'},consentRules:{hu:'Házirend elfogadása',en:'Accept house rules'},consentData:{hu:'Adatkezelési hozzájárulás',en:'Data consent'}
+};
+function bsLabel(base){const l=BS_FIELD_LABELS[base];return l?(lang==='hu'?l.hu:l.en):base;}
+function bsFieldState(id){ /* 'ok' | 'missing' | 'bad' */
+  const el=document.getElementById(id);
+  if(!el)return 'missing';
+  if(el.type==='checkbox')return el.checked?'ok':'missing';
+  if(el.type==='file')return (el.files&&el.files.length)?'ok':'missing';
+  if(el.value.trim()==='')return 'missing';
+  return (typeof el.checkValidity!=='function'||el.checkValidity())?'ok':'bad';
+}
+function bsFilled(id){return bsFieldState(id)==='ok';}
+function bsCollectIssues(ids,prefix){
+  const out=[];
+  ids.forEach(pair=>{
+    const st=bsFieldState(pair[0]);
+    if(st!=='ok')out.push({label:(prefix||'')+bsLabel(pair[1]),bad:st==='bad'});
+  });
+  return out;
+}
+function bsDogIssues(g){
+  return bsCollectIssues(BS_DOG_REQ.map(f=>[g===0?f:f+'_'+g,f]));
+}
+function bsStepIssues(key){
+  if(key==='owner')return bsCollectIssues(['ownerName','Address','ownerPhone','ownerEmail','emergencyName','emergencyPhone'].map(f=>[f,f]));
+  if(key==='dates')return bsCollectIssues([['dateFrom','dateFrom'],['dateTo','dateTo']]);
+  if(key==='dogs'){
+    let out=[];
+    for(let g=0;g<bookDogCount;g++){
+      const pre=bookDogCount>1?(bsDogLabel(g)+': '):'';
+      out=out.concat(bsDogIssues(g).map(it=>({label:pre+it.label,bad:it.bad})));
+    }
+    return out;
+  }
+  if(key==='pay')return bsCollectIssues([['paymentMethod','paymentMethod']]);
+  if(key==='docs')return bsCollectIssues([['dogBooklet','dogBooklet'],['consentRules','consentRules'],['consentData','consentData']]);
+  return [];
+}
+function bsTipHTML(issues){
+  if(!issues.length)return '<span class="bstep-tip-ok">✓ '+(lang==='hu'?'Minden mező kitöltve':'All fields complete')+'</span>';
+  const n=issues.length;
+  let h='<div class="bstep-tip-head">'+(lang==='hu'?(n+' mező hiányzik vagy hibás'):(n+' field'+(n>1?'s':'')+' missing or invalid'))+'</div><ul>';
+  issues.forEach(it=>{h+='<li>'+it.label+(it.bad?(' <em>('+(lang==='hu'?'hibás':'invalid')+')</em>'):'')+'</li>';});
+  return h+'</ul>';
+}
+function bsFieldErrorMsg(el){
+  const v=el.validity||{};
+  if(el.type==='email')return lang==='hu'?'Érvénytelen email formátum – így nézzen ki: nev@pelda.hu':'Invalid email format – it should look like: name@example.com';
+  if(v.rangeUnderflow||v.rangeOverflow||v.badInput){
+    const min=el.min||'1',max=el.max||'5000';
+    return lang==='hu'?('Számot adj meg '+min+' és '+max+' között'):('Enter a number between '+min+' and '+max);
+  }
+  if(v.tooShort)return lang==='hu'?('Legalább '+el.minLength+' karakter szükséges'):('At least '+el.minLength+' characters required');
+  return lang==='hu'?'Ellenőrizd a mező tartalmát':'Please check this field';
+}
+function bsValidateFieldUI(el){
+  if(!el||!el.matches||!el.matches('input,select,textarea'))return;
+  if(el.type==='checkbox'||el.type==='file'||el.type==='hidden')return;
+  const wrap=el.closest('.form-field');
+  if(!wrap)return;
+  const bad=el.value.trim()!==''&&typeof el.checkValidity==='function'&&!el.checkValidity();
+  el.classList.toggle('bs-invalid',bad);
+  let err=wrap.querySelector('.field-error');
+  if(bad){
+    if(!err){err=document.createElement('div');err.className='field-error';wrap.appendChild(err);}
+    err.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>'+bsFieldErrorMsg(el)+'</span>';
+  }else if(err){err.remove();}
+}
+function bsDogDone(g){return BS_DOG_REQ.every(f=>bsFilled(g===0?f:f+'_'+g));}
+function bsStepDone(key){
+  if(key==='owner')return ['ownerName','Address','ownerPhone','ownerEmail','emergencyName','emergencyPhone'].every(bsFilled);
+  if(key==='dates')return bsFilled('dateFrom')&&bsFilled('dateTo');
+  if(key==='dogs'){for(let g=0;g<bookDogCount;g++){if(!bsDogDone(g))return false;}return true;}
+  if(key==='pay')return bsFilled('paymentMethod');
+  if(key==='docs'){const b=document.getElementById('dogBooklet');return !!(b&&b.files&&b.files.length)&&bsFilled('consentRules')&&bsFilled('consentData');}
+  return false;
+}
+function bsDogLabel(g){
+  const el=document.getElementById(g===0?'dogName':'dogName_'+g);
+  const nm=el?el.value.trim():'';
+  if(nm)return nm;
+  return lang==='hu'?((g+1)+'. kutya'):('Dog '+(g+1));
+}
+function buildBookingStepper(){
+  const list=document.getElementById('bstepList');
+  if(!list)return;
+  bsLastCount=bookDogCount;bsLastLang=lang;
+  let html='';
+  BSTEPS.forEach((s,i)=>{
+    if(i>0)html+='<li class="bstep-line" aria-hidden="true"></li>';
+    html+='<li class="bstep" data-idx="'+i+'" data-anchor="'+s.anchor+'">'
+      +'<span class="bstep-dot"><span class="bstep-num">'+(i+1)+'</span>'
+      +'<svg class="bstep-tick" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>'
+      +'<span class="bstep-label">'+(lang==='hu'?s.hu:s.en)+'</span></li>';
+    if(s.key==='dogs'&&bookDogCount>1){
+      html+='<li class="bstep-dogs"><ul>';
+      for(let g=0;g<bookDogCount;g++){
+        html+='<li class="bstep-dog" data-dog="'+g+'"><span class="bstep-dog-dot">'
+          +'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>'
+          +'<span class="bstep-dog-name"></span></li>';
+      }
+      html+='</ul></li>';
+    }
+  });
+  list.innerHTML=html;
+  list.querySelectorAll('.bstep').forEach(li=>{
+    li.addEventListener('click',()=>{
+      const a=document.getElementById(li.dataset.anchor);
+      if(a)window.scrollTo({top:a.getBoundingClientRect().top+window.pageYOffset-92,behavior:'smooth'});
+    });
+    li.addEventListener('mouseenter',()=>{
+      let tip=li.querySelector('.bstep-tip');
+      if(!tip){tip=document.createElement('div');tip.className='bstep-tip';li.appendChild(tip);}
+      tip.innerHTML=bsTipHTML(bsStepIssues(BSTEPS[+li.dataset.idx].key));
+    });
+  });
+  list.querySelectorAll('.bstep-dog').forEach(li=>{
+    const g=+li.dataset.dog;
+    li.style.cursor='pointer';
+    li.addEventListener('click',()=>{
+      const a=document.getElementById(g===0?'bsAnchorDogs':('dogBlock_'+g));
+      if(a)window.scrollTo({top:a.getBoundingClientRect().top+window.pageYOffset-92,behavior:'smooth'});
+    });
+    li.addEventListener('mouseenter',()=>{
+      let tip=li.querySelector('.bstep-tip');
+      if(!tip){tip=document.createElement('div');tip.className='bstep-tip';li.appendChild(tip);}
+      tip.innerHTML=bsTipHTML(bsDogIssues(g));
+    });
+  });
+  refreshBookingStepper();
+}
+function refreshBookingStepper(){
+  const list=document.getElementById('bstepList');
+  if(!list)return;
+  list.querySelectorAll('.bstep').forEach(li=>{
+    const i=+li.dataset.idx;
+    li.classList.toggle('done',bsStepDone(BSTEPS[i].key));
+    li.classList.toggle('active',i===bsActive);
+  });
+  list.querySelectorAll('.bstep-line').forEach((ln,k)=>{
+    ln.classList.toggle('done',bsStepDone(BSTEPS[k].key));
+  });
+  list.querySelectorAll('.bstep-dog').forEach(li=>{
+    const g=+li.dataset.dog;
+    const nm=li.querySelector('.bstep-dog-name');
+    if(nm)nm.textContent=bsDogLabel(g);
+    li.classList.toggle('done',bsDogDone(g));
+  });
+}
+function updateBookingStepper(){
+  const rail=document.getElementById('bookingStepper');
+  if(!rail)return;
+  const fc=document.getElementById('formContent');
+  const pg=document.getElementById('page-booking');
+  const show=pg&&pg.classList.contains('active')&&fc&&fc.style.display!=='none';
+  rail.classList.toggle('bstep-hidden',!show);
+  if(!show)return;
+  if(bsLastCount!==bookDogCount||bsLastLang!==lang){
+    document.querySelectorAll('.bs-invalid').forEach(bsValidateFieldUI);
+    buildBookingStepper();return;
+  }
+  refreshBookingStepper();
+}
+function bsSchedule(){
+  if(bsTimer)return;
+  bsTimer=setTimeout(()=>{bsTimer=null;updateBookingStepper();},80);
+}
+function bsOnScroll(){
+  const rail=document.getElementById('bookingStepper');
+  if(!rail||rail.classList.contains('bstep-hidden'))return;
+  const mid=window.pageYOffset+window.innerHeight*0.35;
+  let act=0;
+  BSTEPS.forEach((s,i)=>{
+    const a=document.getElementById(s.anchor);
+    if(a&&a.getBoundingClientRect().top+window.pageYOffset<=mid)act=i;
+  });
+  if(act!==bsActive){bsActive=act;refreshBookingStepper();}
+}
+(function initBookingStepper(){
+  const bf=document.querySelector('#page-booking .booking-form');
+  if(!bf)return;
+  buildBookingStepper();
+  updateBookingStepper();
+  ['input','change'].forEach(ev=>bf.addEventListener(ev,e=>{bsValidateFieldUI(e.target);bsSchedule();}));
+  bf.addEventListener('click',bsSchedule);
+  const mo=new MutationObserver(bsSchedule);
+  ['formContent','formReview','formSuccess'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)mo.observe(el,{attributes:true,attributeFilter:['style']});
+  });
+  window.addEventListener('scroll',()=>{
+    if(bsScrollT)return;
+    bsScrollT=requestAnimationFrame(()=>{bsScrollT=null;bsOnScroll();});
+  },{passive:true});
 })();
 
 </script>
