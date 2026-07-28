@@ -14,6 +14,63 @@ if (!function_exists('deliver')) {
     }
 }
 
+// ─── KAPCSOLATI ŰRLAP (Contact form) ───
+// Külön, önálló ág a foglalástól függetlenül. Csak az info@blaya.hu címre küld
+// egy egyszerű üzenetet (Reply-To a feladó címe), majd kilép.
+if (($_POST['type'] ?? '') === 'contact') {
+    // Spam védelem — honeypot
+    if (!empty($_POST['website'])) { echo json_encode(['success'=>false,'error'=>'Spam detected']); exit(); }
+
+    $cEmail   = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
+    $cSubject = trim($_POST['subject'] ?? '');
+    $cMessage = trim($_POST['message'] ?? '');
+
+    if (!filter_var($cEmail, FILTER_VALIDATE_EMAIL) || $cMessage === '') {
+        echo json_encode(['success'=>false,'error'=>'Missing required fields']); exit();
+    }
+
+    $subjClean   = $cSubject !== '' ? $cSubject : 'Kapcsolatfelvétel a weboldalról';
+    $cPrimary='#F99905'; $cDark='#1a1a1a'; $cCard='#222222'; $cLight='#ffffff'; $cGray='#cccccc'; $cBorder='#333333';
+    $safeSubject = htmlspecialchars($subjClean);
+    $safeEmail   = htmlspecialchars($cEmail);
+    $safeMessage = nl2br(htmlspecialchars($cMessage));
+
+    $cBody = "
+<!DOCTYPE html><html lang='hu'><head><meta charset='UTF-8'></head>
+<body style='margin:0;padding:0;background:{$cDark};font-family:Arial,sans-serif;' bgcolor='#1a1a1a'>
+<table width='100%' cellpadding='0' cellspacing='0' bgcolor='#1a1a1a' style='background:{$cDark};padding:32px 16px;'>
+<tr><td align='center'>
+<table width='600' cellpadding='0' cellspacing='0' bgcolor='#222222' style='background:{$cCard};border-radius:16px;overflow:hidden;'>
+  <tr><td style='background:{$cPrimary};padding:16px 32px;text-align:center;'>
+    <div style='font-size:15px;font-weight:700;color:{$cDark};text-transform:uppercase;letter-spacing:2px;font-family:Arial,sans-serif;'>&#9993; Új üzenet a weboldalról</div>
+  </td></tr>
+  <tr><td style='padding:24px 32px;'>
+    <table width='100%' cellpadding='0' cellspacing='0' style='border:1px solid {$cBorder};border-radius:8px;overflow:hidden;'>
+      <tr><td style='padding:10px 16px;font-size:13px;color:{$cGray};font-weight:600;width:120px;border-bottom:1px solid {$cBorder};font-family:Arial,sans-serif;'>Feladó email:</td><td style='padding:10px 16px;font-size:13px;color:{$cLight};border-bottom:1px solid {$cBorder};font-family:Arial,sans-serif;'>{$safeEmail}</td></tr>
+      <tr><td style='padding:10px 16px;font-size:13px;color:{$cGray};font-weight:600;border-bottom:1px solid {$cBorder};font-family:Arial,sans-serif;'>Tárgy:</td><td style='padding:10px 16px;font-size:13px;color:{$cLight};border-bottom:1px solid {$cBorder};font-family:Arial,sans-serif;'>{$safeSubject}</td></tr>
+      <tr><td style='padding:10px 16px;font-size:13px;color:{$cGray};font-weight:600;vertical-align:top;font-family:Arial,sans-serif;'>Üzenet:</td><td style='padding:10px 16px;font-size:13px;color:{$cLight};line-height:1.7;font-family:Arial,sans-serif;'>{$safeMessage}</td></tr>
+    </table>
+  </td></tr>
+  <tr><td style='padding:0 32px 24px;text-align:center;'>
+    <a href='mailto:{$safeEmail}' style='display:inline-block;background:{$cPrimary};color:{$cDark};font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;letter-spacing:1px;font-family:Arial,sans-serif;'>&#9993; Válasz küldése</a>
+  </td></tr>
+  <tr><td style='background:{$cDark};padding:14px 32px;text-align:center;border-top:1px solid {$cBorder};'>
+    <div style='font-size:11px;color:rgba(255,255,255,0.35);font-family:Arial,sans-serif;'>BLAYA Kutyapanzió · info@blaya.hu · +36 30 159 2499</div>
+  </td></tr>
+</table></td></tr></table></body></html>";
+
+    $cSubjectEnc = "=?UTF-8?B?" . base64_encode("Új üzenet a weboldalról – {$subjClean}") . "?=";
+    $cHeaders  = "From: BLAYA Kutyapanzió <info@blaya.hu>\r\n";
+    $cHeaders .= "Reply-To: {$cEmail}\r\n";
+    $cHeaders .= "MIME-Version: 1.0\r\n";
+    $cHeaders .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $cHeaders .= "Content-Transfer-Encoding: base64\r\n";
+
+    $cSent = deliver('info@blaya.hu', $cSubjectEnc, chunk_split(base64_encode($cBody)), $cHeaders);
+    echo json_encode(['success' => $cSent ? true : false]);
+    exit();
+}
+
 // ─── Adatok kiolvasása (multipart form-data) ───
 $name           = htmlspecialchars($_POST['name'] ?? '');
 $phone          = htmlspecialchars($_POST['phone'] ?? '');
@@ -48,6 +105,7 @@ $packagesRaw    = $_POST['packages'] ?? '';
 $dogsCount      = intval($_POST['dogsCount'] ?? 1);
 $extraDogsRaw   = $_POST['extraDogs'] ?? '';
 $paymentMethod  = htmlspecialchars($_POST['paymentMethod'] ?? '');
+$paymentTiming  = htmlspecialchars($_POST['paymentTiming'] ?? '');
 
 // Extra kutyák (2–4) adatainak kiolvasása
 $extraDogs = [];
@@ -78,9 +136,9 @@ for ($n = 2; $n <= 4; $n++) {
 // Az oltásnak legalább 14 nappal az érkezés előtt kellett megtörténnie.
 // Ha nincs (értelmezhető) érkezési dátum, a mai naphoz viszonyítunk.
 function rabiesTooRecent($vaccDate, $arrivalDate) {
-    $vacc = strtotime($vaccDate);
+    $vacc = strtotime(str_replace('.', '-', $vaccDate));
     if ($vacc === false) return false;
-    $ref = strtotime($arrivalDate);
+    $ref = strtotime(str_replace('.', '-', $arrivalDate));
     if ($ref === false) $ref = time();
     return $vacc > strtotime('-14 days', $ref);
 }
@@ -94,14 +152,39 @@ foreach ($extraDogs as $n => &$d) {
 }
 unset($d);
 
-// Naponkénti csomagok több sorba — kutyánként (" || " választja el a kutyákat)
+// ─── Féreghajtás 3 hónapos szabály ───
+// A féreghajtásnak az érkezéstől visszaszámítva 3 hónapnál nem régebbinek kell lennie.
+// Ha nincs (értelmezhető) érkezési dátum, a mai naphoz viszonyítunk.
+function wormerTooOld($wormerDate, $arrivalDate) {
+    $w = strtotime(str_replace('.', '-', $wormerDate));
+    if ($w === false) return false;
+    $ref = strtotime(str_replace('.', '-', $arrivalDate));
+    if ($ref === false) $ref = time();
+    return $w < strtotime('-3 months', $ref);
+}
+
+$wormerAlertNames = [];
+$wormerFlagMain = $wormerDate && wormerTooOld($wormerDate, $dateFrom);
+if ($wormerFlagMain) $wormerAlertNames[] = $dogName ?: '1. kutya';
+foreach ($extraDogs as $n => &$d) {
+    $d['wormerFlag'] = $d['wormerDate'] && wormerTooOld($d['wormerDate'], $dateFrom);
+    if ($d['wormerFlag']) $wormerAlertNames[] = $d['name'] ?: "{$n}. kutya";
+}
+unset($d);
+
+// ─── Naponkénti csomagok több sorba — kutyánként (" || " választja el a kutyákat)
 $packagesHtml = '';
 $dogBlocks = explode('||', $packagesRaw);
+
 foreach($dogBlocks as $block) {
     $block = trim($block);
     if(!$block) continue;
-    $packagesHtml .= "<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);'>" . htmlspecialchars($block) . "</div>";
+
+    $packagesHtml .= "<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);'>" 
+        . nl2br(htmlspecialchars($block)) 
+        . "</div>";
 }
+
 if(!$packagesHtml) $packagesHtml = '–';
 
 // Végösszeg: az űrlap által küldött (kedvezményekkel számolt) érték az elsődleges.
@@ -144,7 +227,27 @@ $primary = '#F99905';
 $textLight = '#ffffff';
 $textGray  = '#cccccc';
 $border    = '#333333';
-$logoUrl   = 'https://incredible-donut-efc7b7.netlify.app/blaya_logo.png';
+$logoUrl   = 'https://blaya.netlify.app/blaya_logo.png';
+
+// ─── Logó a levelekben ───
+// A logót a levélbe ágyazzuk (CID inline kép), így a levelezők nem blokkolják
+// és nem "üres placeholder"-ként jelenik meg. A base64 a blaya_email_assets.php-ban van.
+// Ha az asset fájl bármi okból hiányzik, visszaesünk a régi URL-es megoldásra.
+$logoInline = null;
+$logoSrc    = $logoUrl;
+$assetsFile = __DIR__ . '/blaya_email_assets.php';
+if (is_file($assetsFile)) {
+    include $assetsFile;
+    if (!empty($BLAYA_LOGO_B64)) {
+        $logoInline = [
+            'name'    => 'blaya_logo.png',
+            'type'    => 'image/png',
+            'cid'     => 'blayalogo',
+            'content' => chunk_split($BLAYA_LOGO_B64),
+        ];
+        $logoSrc = 'cid:blayalogo';
+    }
+}
 
 // ─── Fizetési (utalási) adatok — TODO: írd be a valós számlaszámot! ───
 $bankAccountName   = 'Brkity Bernadett (BLAYA Kutyapanzió)';
@@ -196,7 +299,11 @@ function extraDogSection($d, $primary, $textGray, $border) {
     $html .= row('Veszettség oltás:', $rabiesVal, $textGray, $border);
     $html .= row('Kombinált oltás:', $d['vaccCombo'], $textGray, $border);
     $html .= row('Utolsó féreghajtó neve:', $d['wormerName'], $textGray, $border);
-    $html .= row('Utolsó féreghajtó dátuma:', $d['wormerDate'], $textGray, $border);
+    $wormerVal = $d['wormerDate'];
+    if (!empty($d['wormerFlag'])) {
+        $wormerVal = "<span style='color:#DE0E0E;font-weight:700;font-size:15px;'>⚠ {$wormerVal} — 3 HÓNAPNÁL RÉGEBBI!</span>";
+    }
+    $html .= row('Utolsó féreghajtó dátuma:', $wormerVal, $textGray, $border);
     $html .= row('Betegség:', $d['illness'], $textGray, $border);
     $html .= row('Gyógyszer:', $d['meds'], $textGray, $border);
     $html .= row('Trauma/Támadás:', $d['trauma'], $textGray, $border);
@@ -254,7 +361,47 @@ if ($rabiesFlagMain) {
     $vaccRabiesDisplay = "<span style='color:#DE0E0E;font-weight:700;font-size:15px;'>⚠ {$vaccRabies} — 14 NAPON BELÜLI OLTÁS!</span>";
 }
 
-$internalSubject = "=?UTF-8?B?" . base64_encode((!empty($rabiesAlertNames) ? "⚠ OLTÁS FIGYELMEZTETÉS – " : "") . "Új foglalási kérelem – {$dogName} ({$name})") . "?=";
+// Féreghajtás figyelmeztető sáv, ha bármelyik kutya féreghajtása 3 hónapnál régebbi
+$wormerBannerHtml = '';
+if (!empty($wormerAlertNames)) {
+    $wAlertNames = implode(', ', $wormerAlertNames);
+    $wormerBannerHtml = "
+  <tr><td style='background:#DE0E0E;padding:20px 32px;text-align:center;'>
+    <div style='font-size:22px;font-weight:700;color:#ffffff;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;line-height:1.4;'>&#9888; FIGYELEM: FÉREGHAJTÁS 3 HÓNAPNÁL RÉGEBBI!</div>
+    <div style='font-size:14px;font-weight:700;color:#ffffff;font-family:Arial,sans-serif;margin-top:8px;line-height:1.6;'>Érintett kutya: {$wAlertNames}<br>A féreghajtás több mint 3 hónapja történt — a panzióztatás feltétele nem teljesül!</div>
+  </td></tr>";
+}
+$wormerDateDisplay = $wormerDate;
+if ($wormerFlagMain) {
+    $wormerDateDisplay = "<span style='color:#DE0E0E;font-weight:700;font-size:15px;'>⚠ {$wormerDate} — 3 HÓNAPNÁL RÉGEBBI!</span>";
+}
+
+// ─── Vendégnek szóló, finom figyelmeztetés (nem kéri, hogy keressen minket – mi hívjuk) ───
+$guestWarnRows = [];
+if (!empty($rabiesAlertNames)) {
+    $guestWarnRows[] = "A megadott <strong style='color:{$textLight};'>veszettség elleni oltás</strong> dátuma alapján előfordulhat, hogy nem teljesül a kötelező, érkezés előtti <strong style='color:{$textLight};'>14 napos</strong> feltétel.";
+}
+if (!empty($wormerAlertNames)) {
+    $guestWarnRows[] = "A megadott <strong style='color:{$textLight};'>féreghajtás</strong> dátuma alapján előfordulhat, hogy az meghaladja a panzióztatáshoz szükséges <strong style='color:{$textLight};'>3 hónapos</strong> időkorlátot.";
+}
+$guestWarnHtml = '';
+if (!empty($guestWarnRows)) {
+    $items = '';
+    foreach ($guestWarnRows as $r) {
+        $items .= "<div style='font-size:13px;color:{$textGray};line-height:1.7;margin-bottom:8px;font-family:Arial,sans-serif;'>• {$r}</div>";
+    }
+    $guestWarnHtml = "
+    <table width='100%' cellpadding='0' cellspacing='0' style='background:#2a1f00;border:1px solid {$primary};border-radius:10px;margin-bottom:24px;'>
+      <tr><td style='padding:16px 20px;'>
+        <div style='font-size:13px;font-weight:700;color:{$primary};margin-bottom:10px;font-family:Arial,sans-serif;'>⚠ Az oltási / féreghajtási adatokkal kapcsolatban</div>
+        {$items}
+        <div style='font-size:13px;color:{$textGray};line-height:1.7;margin-top:6px;font-family:Arial,sans-serif;'>A részletekkel kapcsolatban <strong style='color:{$textLight};'>hamarosan felvesszük Önnel a kapcsolatot.</strong></div>
+      </td></tr>
+    </table>";
+}
+
+// A tárgysor tiszta marad; a figyelmeztetések a levél törzsében, piros sávban jelennek meg.
+$internalSubject = "=?UTF-8?B?" . base64_encode("Új foglalási kérelem – {$dogName} ({$name})") . "?=";
 $internalBody = "
 <!DOCTYPE html><html lang='hu'><head><meta charset='UTF-8'>
 <meta name='color-scheme' content='light only'>
@@ -270,7 +417,7 @@ body { background-color: #1a1a1a !important; }
 <table width='620' cellpadding='0' cellspacing='0' bgcolor='#222222' style='background:{$cardBg};border-radius:16px;overflow:hidden;'>
 
   <tr><td style='background:{$dark};padding:28px 32px;text-align:center;border-bottom:3px solid {$primary};'>
-    <img src='{$logoUrl}' alt='BLAYA' style='height:64px;width:auto;display:block;margin:0 auto 8px;background:#1a1a1a;padding:8px;border-radius:8px;'>
+    <img src='{$logoSrc}' alt='BLAYA' width='72' height='72' style='width:72px;height:72px;display:block;margin:0 auto 8px;background:#1a1a1a;padding:8px;border-radius:8px;'>
     <div style='font-size:11px;color:{$primary};letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif;'>Kutyapanzió</div>
   </td></tr>
 
@@ -278,6 +425,7 @@ body { background-color: #1a1a1a !important; }
     <div style='font-size:15px;font-weight:700;color:{$dark};text-transform:uppercase;letter-spacing:2px;font-family:Arial,sans-serif;'>⭐ Új foglalási kérelem érkezett</div>
   </td></tr>
   {$rabiesBannerHtml}
+  {$wormerBannerHtml}
   <tr><td style='padding:24px 32px 0;'>
     <table width='100%' cellpadding='0' cellspacing='0' style='border:1px solid {$border};border-radius:8px;overflow:hidden;'>
       " . sec('Gazda adatai', $primary) . "
@@ -304,7 +452,7 @@ body { background-color: #1a1a1a !important; }
       " . row('Veszettség oltás:', $vaccRabiesDisplay, $textGray, $border) . "
       " . row('Kombinált oltás:', $vaccCombo, $textGray, $border) . "
       " . row('Utolsó féreghajtó neve:', $wormerName, $textGray, $border) . "
-      " . row('Utolsó féreghajtó dátuma:', $wormerDate, $textGray, $border) . "
+      " . row('Utolsó féreghajtó dátuma:', $wormerDateDisplay, $textGray, $border) . "
       " . row('Betegség:', $dogIllness, $textGray, $border) . "
       " . row('Gyógyszer:', $dogMeds, $textGray, $border) . "
       " . row('Trauma/Támadás:', $dogTrauma, $textGray, $border) . "
@@ -319,6 +467,7 @@ body { background-color: #1a1a1a !important; }
       " . row('Becsült végösszeg:', $totalFmt, $textGray, $border) . "
       " . row('Foglaló (50%):', $depositFmt, $textGray, $border) . "
       " . row('Maradék (távozáskor):', $remainderFmt, $textGray, $border) . "
+      " . row('Fizetés ütemezése:', $paymentTiming, $textGray, $border) . "
       " . row('Választott fizetési mód:', $paymentMethod, $textGray, $border) . "
     </table>
   </td></tr>
@@ -354,7 +503,7 @@ body { background-color: #1a1a1a !important; }
 <table width='620' cellpadding='0' cellspacing='0' bgcolor='#222222' style='background:{$cardBg};border-radius:16px;overflow:hidden;'>
 
   <tr><td style='background:{$dark};padding:28px 32px;text-align:center;border-bottom:3px solid {$primary};'>
-    <img src='{$logoUrl}' alt='BLAYA' style='height:64px;width:auto;display:block;margin:0 auto 8px;background:#1a1a1a;padding:8px;border-radius:8px;'>
+    <img src='{$logoSrc}' alt='BLAYA' width='72' height='72' style='width:72px;height:72px;display:block;margin:0 auto 8px;background:#1a1a1a;padding:8px;border-radius:8px;'>
     <div style='font-size:11px;color:{$primary};letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif;'>Kutyapanzió</div>
   </td></tr>
 
@@ -395,11 +544,15 @@ body { background-color: #1a1a1a !important; }
         <td style='padding:10px 16px;font-size:13px;color:{$textLight};font-family:Arial,sans-serif;'>{$remainderFmt}</td>
       </tr>
       <tr style='border-top:1px solid {$border};'>
+        <td style='padding:10px 16px;font-size:13px;color:{$textGray};font-family:Arial,sans-serif;'><strong>Fizetés ütemezése:</strong></td>
+        <td style='padding:10px 16px;font-size:13px;color:{$textLight};font-family:Arial,sans-serif;'>{$paymentTiming}</td>
+      </tr>
+      <tr style='border-top:1px solid {$border};'>
         <td style='padding:10px 16px;font-size:13px;color:{$textGray};font-family:Arial,sans-serif;'><strong>Fizetési mód:</strong></td>
         <td style='padding:10px 16px;font-size:13px;color:{$textLight};font-family:Arial,sans-serif;'>{$paymentMethod}</td>
       </tr>
     </table>
-
+    {$guestWarnHtml}
     <table width='100%' cellpadding='0' cellspacing='0' style='background:#2a1f00;border:1px solid {$primary};border-radius:10px;margin-bottom:24px;'>
       <tr><td style='padding:16px 20px;'>
         <div style='font-size:13px;font-weight:700;color:{$primary};margin-bottom:8px;font-family:Arial,sans-serif;'>⚠ Fontos tudnivaló</div>
@@ -463,51 +616,63 @@ body { background-color: #1a1a1a !important; }
 </table>
 </body></html>";
 
-// ─── MIME BOUNDARY (képek mellékletként) ───
-$boundary = md5(time());
-
-function buildEmail($body, $attachments, $boundary) {
-    if(empty($attachments)) return $body;
-    $mime = "--{$boundary}\r\n";
-    $mime .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $mime .= "Content-Transfer-Encoding: base64\r\n\r\n";
-    $mime .= chunk_split(base64_encode($body)) . "\r\n";
-    foreach($attachments as $att) {
-        $mime .= "--{$boundary}\r\n";
-        $mime .= "Content-Type: {$att['type']}; name=\"{$att['name']}\"\r\n";
-        $mime .= "Content-Transfer-Encoding: base64\r\n";
-        $mime .= "Content-Disposition: attachment; filename=\"{$att['name']}\"\r\n\r\n";
-        $mime .= chunk_split($att['content']) . "\r\n";
+// ─── MIME összeállítás (inline logó CID-del + opcionális csatolmányok) ───
+// Visszaad egy [Content-Type fejléc, törzs] párost. A HTML és a beágyazott logó
+// egy multipart/related blokkba kerül; ha vannak csatolt fájlok, azt egy külső
+// multipart/mixed burkolja.
+function buildMessage($html, $logo, $attachments) {
+    $relB = 'rel_' . md5(uniqid('', true));
+    $related  = "--{$relB}\r\n";
+    $related .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $related .= "Content-Transfer-Encoding: base64\r\n\r\n";
+    $related .= chunk_split(base64_encode($html)) . "\r\n";
+    if ($logo) {
+        $related .= "--{$relB}\r\n";
+        $related .= "Content-Type: {$logo['type']}\r\n";
+        $related .= "Content-Transfer-Encoding: base64\r\n";
+        $related .= "Content-ID: <{$logo['cid']}>\r\n";
+        $related .= "Content-Disposition: inline; filename=\"{$logo['name']}\"\r\n\r\n";
+        $related .= $logo['content'] . "\r\n";
     }
-    $mime .= "--{$boundary}--";
-    return $mime;
+    $related .= "--{$relB}--\r\n";
+
+    if (empty($attachments)) {
+        return ["Content-Type: multipart/related; boundary=\"{$relB}\"\r\n", $related];
+    }
+
+    $mixB = 'mix_' . md5(uniqid('', true));
+    $body  = "--{$mixB}\r\n";
+    $body .= "Content-Type: multipart/related; boundary=\"{$relB}\"\r\n\r\n";
+    $body .= $related . "\r\n";
+    foreach ($attachments as $att) {
+        $body .= "--{$mixB}\r\n";
+        $body .= "Content-Type: {$att['type']}; name=\"{$att['name']}\"\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n";
+        $body .= "Content-Disposition: attachment; filename=\"{$att['name']}\"\r\n\r\n";
+        $body .= chunk_split($att['content']) . "\r\n";
+    }
+    $body .= "--{$mixB}--";
+    return ["Content-Type: multipart/mixed; boundary=\"{$mixB}\"\r\n", $body];
 }
 
 $toBlaya   = 'info@blaya.hu';
 $fromEmail = 'info@blaya.hu';
 $fromName  = 'BLAYA Kutyapanzió';
 
-if(!empty($attachments)) {
-    $h1  = "From: {$fromName} <{$fromEmail}>\r\n";
-    $h1 .= "Reply-To: {$email}\r\n";
-    $h1 .= "MIME-Version: 1.0\r\n";
-    $h1 .= "Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n";
-    $body1 = buildEmail($internalBody, $attachments, $boundary);
-} else {
-    $h1  = "From: {$fromName} <{$fromEmail}>\r\n";
-    $h1 .= "Reply-To: {$email}\r\n";
-    $h1 .= "MIME-Version: 1.0\r\n";
-    $h1 .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $body1 = $internalBody;
-}
+list($ct1, $body1) = buildMessage($internalBody, $logoInline, $attachments);
+$h1  = "From: {$fromName} <{$fromEmail}>\r\n";
+$h1 .= "Reply-To: {$email}\r\n";
+$h1 .= "MIME-Version: 1.0\r\n";
+$h1 .= $ct1;
 
+list($ct2, $body2) = buildMessage($autoBody, $logoInline, []);
 $h2  = "From: {$fromName} <{$fromEmail}>\r\n";
 $h2 .= "Reply-To: {$fromEmail}\r\n";
 $h2 .= "MIME-Version: 1.0\r\n";
-$h2 .= "Content-Type: text/html; charset=UTF-8\r\n";
+$h2 .= $ct2;
 
 $sent1 = deliver($toBlaya, $internalSubject, $body1, $h1);
-$sent2 = deliver($email,   $autoSubject,     $autoBody, $h2);
+$sent2 = deliver($email,   $autoSubject,     $body2, $h2);
 
 echo json_encode(['success' => $sent1 ? true : false]);
 ?>
