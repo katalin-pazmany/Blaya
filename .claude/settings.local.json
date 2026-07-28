@@ -34,7 +34,14 @@
       "Bash('C:/Program Files \\(x86\\)/Microsoft/Edge/Application/msedge.exe' --headless --disable-gpu --no-pdf-header-footer --print-to-pdf=C:/Users/pkati/AppData/Local/Temp/claude/C--Users-pkati-Desktop-Blaya/4bb1ef91-3460-41bf-940b-efcda6bcf8b9/scratchpad/adat_new.pdf file:///C:/Users/pkati/AppData/Local/Temp/claude/C--Users-pkati-Desktop-Blaya/4bb1ef91-3460-41bf-940b-efcda6bcf8b9/scratchpad/adatkezeles.html)",
       "Bash(sleep 5)",
       "Bash(ls -la C:/Users/pkati/AppData/Local/Temp/claude/C--Users-pkati-Desktop-Blaya/4bb1ef91-3460-41bf-940b-efcda6bcf8b9/scratchpad/imp_new.pdf C:/Users/pkati/AppData/Local/Temp/claude/C--Users-pkati-Desktop-Blaya/4bb1ef91-3460-41bf-940b-efcda6bcf8b9/scratchpad/adat_new.pdf)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git ls-tree *)",
+      "Bash(git rev-list *)",
+      "Bash(grep -vE '^-\\\\s*$')",
+      "Bash(git checkout *)"
     ]
   }
 }
