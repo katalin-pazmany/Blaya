@@ -41,7 +41,10 @@
       "Bash(git ls-tree *)",
       "Bash(git rev-list *)",
       "Bash(grep -vE '^-\\\\s*$')",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "PowerShell(\"listening: \" + [bool]\\(Get-NetTCPConnection -LocalPort 8791 -State Listen -ErrorAction SilentlyContinue\\))",
+      "PowerShell(try { $r=Invoke-WebRequest \"http://localhost:8791/index.html\" -UseBasicParsing -TimeoutSec 5; Write-Output \\(\"HTTP {0}\" -f $r.StatusCode\\); Write-Output \\(\"Cache-Control: {0}\" -f $r.Headers['Cache-Control']\\) } catch { Write-Output \\(\"ERR \" + $_.Exception.Message\\) })"
     ]
   }
 }
