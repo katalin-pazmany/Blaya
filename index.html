@@ -1506,8 +1506,13 @@ let pawObserver=null;
 window.__pawEditing=false;
 // Hand-authored paws: [{x,y,rot}] as fractions of width/height + degrees. Empty = auto serpentine.
 // Placed via the #pawedit editor. Re-open #pawedit to adjust.
-window.PAW_POINTS=[{"x":0.8831,"y":0.3244,"rot":230},{"x":0.7766,"y":0.3552,"rot":245},{"x":0.67,"y":0.3216,"rot":265},{"x":0.57,"y":0.3404,"rot":275},{"x":0.4757,"y":0.3212,"rot":275},{"x":0.3738,"y":0.3384,"rot":275},{"x":0.2779,"y":0.3245,"rot":250},{"x":0.221,"y":0.3578,"rot":220},{"x":0.1046,"y":0.3559,"rot":205},{"x":0.1132,"y":0.4017,"rot":200},{"x":0.0383,"y":0.4397,"rot":210},{"x":0.0898,"y":0.4703,"rot":180},{"x":0.0307,"y":0.5232,"rot":170},{"x":0.1045,"y":0.5594,"rot":175},{"x":0.0354,"y":0.6139,"rot":175},{"x":0.1105,"y":0.6606,"rot":190},{"x":0.0384,"y":0.7105,"rot":170},{"x":0.1266,"y":0.7513,"rot":160},{"x":0.1182,"y":0.8022,"rot":130},{"x":0.2381,"y":0.775,"rot":125},{"x":0.3439,"y":0.8018,"rot":100},{"x":0.438,"y":0.7722,"rot":105},{"x":0.5463,"y":0.803,"rot":100},{"x":0.6557,"y":0.7701,"rot":115},{"x":0.7468,"y":0.8022,"rot":110},{"x":0.8975,"y":0.7908,"rot":145},{"x":0.8626,"y":0.8369,"rot":180},{"x":0.9488,"y":0.8776,"rot":180},{"x":0.8656,"y":0.92,"rot":180}];
+window.PAW_POINTS=[{"a":2,"rx":0.8831,"ry":0.2409,"rot":230},{"a":2,"rx":0.7766,"ry":0.3449,"rot":245},{"a":2,"rx":0.67,"ry":0.2314,"rot":265},{"a":2,"rx":0.57,"ry":0.2949,"rot":275},{"a":2,"rx":0.4757,"ry":0.2301,"rot":275},{"a":2,"rx":0.3738,"ry":0.2882,"rot":275},{"a":2,"rx":0.2779,"ry":0.2412,"rot":250},{"a":2,"rx":0.221,"ry":0.3537,"rot":220},{"a":2,"rx":0.1046,"ry":0.3473,"rot":205},{"a":2,"rx":0.1132,"ry":0.502,"rot":200},{"a":2,"rx":0.0383,"ry":0.6304,"rot":210},{"a":2,"rx":0.0898,"ry":0.7337,"rot":180},{"a":2,"rx":0.0307,"ry":0.9124,"rot":170},{"a":3,"rx":0.1045,"ry":0.2264,"rot":175},{"a":4,"rx":0.0354,"ry":0.1128,"rot":175},{"a":4,"rx":0.1105,"ry":0.3968,"rot":190},{"a":4,"rx":0.0384,"ry":0.7003,"rot":170},{"a":4,"rx":0.1266,"ry":0.9484,"rot":160},{"a":5,"rx":0.1182,"ry":0.1941,"rot":130},{"a":5,"rx":0.2381,"ry":0.0689,"rot":125},{"a":5,"rx":0.3439,"ry":0.1922,"rot":100},{"a":5,"rx":0.438,"ry":0.056,"rot":105},{"a":5,"rx":0.5463,"ry":0.1978,"rot":100},{"a":5,"rx":0.6557,"ry":0.0463,"rot":115},{"a":5,"rx":0.7468,"ry":0.1941,"rot":110},{"a":5,"rx":0.8975,"ry":0.1416,"rot":145},{"a":5,"rx":0.8626,"ry":0.3538,"rot":180},{"a":5,"rx":0.9488,"ry":0.5412,"rot":180},{"a":5,"rx":0.8656,"ry":0.7364,"rot":180}];
 function pawSizeFor(W){return Math.max(20,Math.min(36,W*0.036));}
+// Paws are anchored to a home-page section so they move WITH the content on resize,
+// instead of drifting (which happens when anchored to a fraction of total page height).
+function pawAnchors(){const h=document.getElementById('page-home');return h?[].slice.call(h.children).filter(el=>el.id!=='pawTrail'):[];}
+function pawAnchorFor(homeY){const A=pawAnchors();if(!A.length)return{a:0,ry:0};let ai=A.findIndex(a=>homeY>=a.offsetTop&&homeY<a.offsetTop+a.offsetHeight);if(ai<0)ai=(A[0]&&homeY<A[0].offsetTop)?0:A.length-1;const a=A[ai];return{a:ai,ry:(homeY-a.offsetTop)/Math.max(1,a.offsetHeight)};}
+function pawXY(p,W,H){const A=pawAnchors();const a=(typeof p.a==='number')?A[Math.min(p.a,A.length-1)]:null;const x=(p.rx!==undefined?p.rx:p.x)*W;const y=a?(a.offsetTop+(p.ry||0)*a.offsetHeight):((p.y||0)*H);return{x:x,y:y};}
 // Auto edge-hugging serpentine → paw specs [{x,y,rot}] in px (left gutter → sweep right at
 // "Mit kínálunk" → right gutter → sweep left at "Elégedett gazdik" → left gutter).
 function pawSpecsAuto(W,H){
@@ -1547,7 +1552,7 @@ function buildPawTrail(){
   const W=home.clientWidth, H=home.clientHeight, size=pawSizeFor(W);
   // Hand-authored paws win on wide screens; auto-serpentine is the fallback (and mobile).
   const specs=(window.PAW_POINTS.length && W>=760)
-    ? window.PAW_POINTS.map(p=>({x:p.x*W,y:p.y*H,rot:p.rot}))
+    ? window.PAW_POINTS.map(p=>{const xy=pawXY(p,W,H);return{x:xy.x,y:xy.y,rot:p.rot};})
     : pawSpecsAuto(W,H);
   trail.innerHTML='';
   specs.forEach((s,i)=>trail.appendChild(makePaw(s,size,i)));
@@ -1605,7 +1610,7 @@ window.addEventListener('load',()=>setTimeout(buildPawTrail,150));
     const h=home(),W=h.clientWidth,H=h.clientHeight;
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.id='pawOrderLine'; svg.setAttribute('viewBox','0 0 '+W+' '+H);
-    const pts=P().map(p=>(p.x*W).toFixed(1)+','+(p.y*H).toFixed(1)).join(' ');
+    const pts=P().map(p=>{const xy=pawXY(p,W,H);return xy.x.toFixed(1)+','+xy.y.toFixed(1);}).join(' ');
     svg.innerHTML='<polyline points="'+pts+'" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-dasharray="3 8" vector-effect="non-scaling-stroke"/>';
     trail.insertBefore(svg,trail.firstChild);
   }
@@ -1618,15 +1623,16 @@ window.addEventListener('load',()=>setTimeout(buildPawTrail,150));
   function highlight(){document.querySelectorAll('#pawTrail .paw-print').forEach(p=>p.classList.toggle('pw-sel',+p.dataset.idx===sel));}
   function showSel(){if(bar)bar.classList.toggle('has-sel',sel>=0); if(sel>=0&&rotInput)rotInput.value=Math.round(P()[sel].rot);}
   function select(i){sel=i;highlight();showSel();}
-  function seed(){const h=home(),W=h.clientWidth,H=h.clientHeight;window.PAW_POINTS=pawSpecsAuto(W,H).map(s=>({x:+(s.x/W).toFixed(4),y:+(s.y/H).toFixed(4),rot:Math.round(s.rot)}));}
+  function seed(){const h=home(),W=h.clientWidth,H=h.clientHeight;window.PAW_POINTS=pawSpecsAuto(W,H).map(s=>{const an=pawAnchorFor(s.y);return{a:an.a,rx:+(s.x/W).toFixed(4),ry:+an.ry.toFixed(4),rot:Math.round(s.rot)};});}
   function rebuild(){buildPawTrail();const t=document.getElementById('pawTrail');if(t)t.classList.add('pw-editing');wire();drawOrderLine();highlight();showSel();updateCount();updateHint();}
   function wire(){document.querySelectorAll('#pawTrail .paw-print').forEach(p=>{p.addEventListener('pointerdown',onDown);p.addEventListener('wheel',onWheel,{passive:false});});}
   function onDown(e){
     if(orderMode){e.preventDefault();e.stopPropagation();orderClick(+this.dataset.idx);return;}
     e.preventDefault();e.stopPropagation();
     const idx=+this.dataset.idx,h=home(),W=h.clientWidth,H=h.clientHeight,sz=this.offsetWidth;
-    const cx=P()[idx].x*W, cy=P()[idx].y*H;
-    drag={idx,el:this,offX:e.pageX-cx,offY:e.pageY-cy,startX:e.pageX,startY:e.pageY,moved:false,W,H,sz};
+    const homeTop=h.getBoundingClientRect().top+window.scrollY;
+    const c=pawXY(P()[idx],W,H);
+    drag={idx,el:this,offX:e.pageX-c.x,offY:(e.pageY-homeTop)-c.y,startX:e.pageX,startY:e.pageY,moved:false,W,H,sz,homeTop};
     try{this.setPointerCapture(e.pointerId);}catch(_){}
     this.style.cursor='grabbing';
     window.addEventListener('pointermove',onMove);
@@ -1635,9 +1641,9 @@ window.addEventListener('load',()=>setTimeout(buildPawTrail,150));
   function onMove(e){
     if(!drag)return;
     if(!drag.moved&&Math.hypot(e.pageX-drag.startX,e.pageY-drag.startY)>3)drag.moved=true;
-    const cx=e.pageX-drag.offX, cy=e.pageY-drag.offY;
-    P()[drag.idx].x=+(cx/drag.W).toFixed(4);
-    P()[drag.idx].y=+(cy/drag.H).toFixed(4);
+    const cx=e.pageX-drag.offX, cy=(e.pageY-drag.homeTop)-drag.offY;
+    const an=pawAnchorFor(cy);
+    const p=P()[drag.idx];p.rx=+(cx/drag.W).toFixed(4);p.a=an.a;p.ry=+an.ry.toFixed(4);delete p.x;delete p.y;
     drag.el.style.left=(cx-drag.sz/2)+'px';
     drag.el.style.top=(cy-drag.sz/2)+'px';
   }
@@ -1648,8 +1654,10 @@ window.addEventListener('load',()=>setTimeout(buildPawTrail,150));
   function onWheel(e){e.preventDefault();const idx=+this.dataset.idx;setRot(idx,P()[idx].rot+(e.deltaY>0?5:-5));select(idx);}
   function addPaw(){
     const h=home(),W=h.clientWidth,H=h.clientHeight;
-    const cx=window.scrollX+window.innerWidth/2, cy=window.scrollY+window.innerHeight/2-h.offsetTop;
-    P().push({x:+(cx/W).toFixed(4),y:+(cy/H).toFixed(4),rot:180});rebuild();select(P().length-1);
+    const homeTop=h.getBoundingClientRect().top+window.scrollY;
+    const cx=window.scrollX+window.innerWidth/2, cy=(window.scrollY+window.innerHeight/2)-homeTop;
+    const an=pawAnchorFor(cy);
+    P().push({a:an.a,rx:+(cx/W).toFixed(4),ry:+an.ry.toFixed(4),rot:180});rebuild();select(P().length-1);
   }
   function start(){
     const h=home(),sc=document.getElementById('siteContent');
@@ -1672,7 +1680,7 @@ window.addEventListener('load',()=>setTimeout(buildPawTrail,150));
       const a=e.target.getAttribute('data-a');if(!a)return;
       if(a==='rot-'&&sel>=0)setRot(sel,P()[sel].rot-15);
       else if(a==='rot+'&&sel>=0)setRot(sel,P()[sel].rot+15);
-      else if(a==='dup'&&sel>=0){const p=P()[sel];P().splice(sel+1,0,{x:+(p.x+0.008).toFixed(4),y:+(p.y+0.012).toFixed(4),rot:p.rot});rebuild();select(sel+1);}
+      else if(a==='dup'&&sel>=0){const p=P()[sel];P().splice(sel+1,0,{a:p.a,rx:+(p.rx+0.008).toFixed(4),ry:+(p.ry+0.03).toFixed(4),rot:p.rot});rebuild();select(sel+1);}
       else if(a==='del'&&sel>=0){P().splice(sel,1);sel=-1;rebuild();}
       else if(a==='add')addPaw();
       else if(a==='order'){orderMode?finishOrder():startOrder();}
