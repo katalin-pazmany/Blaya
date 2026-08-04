@@ -205,6 +205,53 @@ if (!$name || !$email || !$dogName) {
     echo json_encode(['success'=>false,'error'=>'Missing required fields']); exit();
 }
 
+// ─── Foglalás mentése az admin felülethez (SQLite) ───
+// Ha ez meghiúsul, a foglalási email küldése akkor is folytatódik —
+// a mentés nem szakíthatja meg a meglévő emailes folyamatot.
+require_once __DIR__ . '/admin/includes/db.php';
+saveBooking([
+    'owner_name'      => $name,
+    'owner_phone'     => $phone,
+    'owner_email'     => $email,
+    'owner_address'   => $address,
+    'dog_name'        => $dogName,
+    'dogs_count'      => $dogsCount,
+    'date_from'       => $dateFrom,
+    'date_to'         => $dateTo,
+    'total'           => $total,
+    'deposit'         => $deposit,
+    'remainder'       => $remainder,
+    'payment_method'  => $paymentMethod,
+    'payment_timing'  => $paymentTiming,
+    'packages_raw'    => $packagesRaw,
+    'raw' => [
+        'emergencyName'     => $emergencyName,
+        'emergencyPhone'    => $emergencyPhone,
+        'emergencyRelation' => $emergencyRel,
+        'dogBreed'          => $dogBreed,
+        'dogAge'            => $dogAge,
+        'dogGender'         => $dogGender,
+        'dogNeutered'       => $dogNeutered,
+        'dogHeat'           => $dogHeat,
+        'dogChip'           => $dogChip,
+        'dogSince'          => $dogSince,
+        'dogFood'           => $dogFood,
+        'dogFoodAmt'        => $dogFoodAmt,
+        'vaccRabies'        => $vaccRabies,
+        'vaccCombo'         => $vaccCombo,
+        'wormerName'        => $wormerName,
+        'wormerDate'        => $wormerDate,
+        'dogIllness'        => $dogIllness,
+        'dogMeds'           => $dogMeds,
+        'dogTrauma'         => $dogTrauma,
+        'dogBehavior'       => $dogBehavior,
+        'dogComment'        => $dogComment,
+        'rabiesFlagMain'    => $rabiesFlagMain,
+        'wormerFlagMain'    => $wormerFlagMain,
+        'extraDogs'         => $extraDogs,
+    ],
+]);
+
 // ─── Képek feldolgozása ───
 $attachments = [];
 foreach($_FILES as $key => $file) {

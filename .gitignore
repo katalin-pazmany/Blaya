@@ -1,0 +1,4 @@
+# Admin panel secrets & data (contains guest PII — never commit)
+admin/config.php
+admin/data/*.sqlite
+admin/data/*.sqlite-journal
