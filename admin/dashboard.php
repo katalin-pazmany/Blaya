@@ -18,12 +18,6 @@ $monthNamesShort = ['Jan','Feb','Már','Ápr','Máj','Jún','Júl','Aug','Szep',
 $month = getStatsForRange($first->format('Y-m-d'), $last->format('Y-m-d'));
 $allTime = getStatsForRange(null, null);
 
-// Share of this month's requested dogs in each status — drives the ring fills.
-$monthDogsTotal = $month['accepted']['dogs'] + $month['declined']['dogs'] + $month['pending']['dogs'];
-$acceptedPct = $monthDogsTotal > 0 ? $month['accepted']['dogs'] / $monthDogsTotal * 100 : 0;
-$declinedPct = $monthDogsTotal > 0 ? $month['declined']['dogs'] / $monthDogsTotal * 100 : 0;
-$pendingPct  = $monthDogsTotal > 0 ? $month['pending']['dogs']  / $monthDogsTotal * 100 : 0;
-
 // Last 6 months of income (accepted bookings), for the trend sparkline.
 $incomeTrend = [];
 for ($i = 5; $i >= 0; $i--) {
@@ -46,6 +40,25 @@ function ring(string $bigValue, string $subLabel, float $pct, string $colorVar):
     $pct = max(0, min(100, $pct));
     echo '<div class="ring" style="--pct:' . $pct . ';--ring-color:' . htmlspecialchars($colorVar) . ';">';
     echo '<div class="ring-inner"><div class="ring-value">' . $bigValue . '</div><div class="ring-sub">' . htmlspecialchars($subLabel) . '</div></div>';
+    echo '</div>';
+}
+
+// One donut, three segments (accepted/pending/declined) — the ring itself
+// shows the mix at a glance, the legend rows give the exact head counts.
+function statusDonut(int $accepted, int $pending, int $declined): void {
+    $total = $accepted + $pending + $declined;
+    if ($total > 0) {
+        $accEnd = $accepted / $total * 100;
+        $penEnd = $accEnd + $pending / $total * 100;
+        $gradient = sprintf(
+            'conic-gradient(var(--success) 0%% %1$s%%, var(--primary) %1$s%% %2$s%%, var(--danger) %2$s%% 100%%)',
+            $accEnd, $penEnd
+        );
+    } else {
+        $gradient = 'conic-gradient(rgba(255,255,255,0.08) 0 100%)';
+    }
+    echo '<div class="ring" style="background:' . $gradient . ';">';
+    echo '<div class="ring-inner"><div class="ring-value">' . $total . '</div><div class="ring-sub">kutya összesen</div></div>';
     echo '</div>';
 }
 
@@ -94,6 +107,16 @@ require __DIR__ . '/includes/layout_header.php';
 .ring-inner { width: 84px; height: 84px; border-radius: 50%; background: var(--card-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .ring-value { font-family: 'Oswald', sans-serif; font-size: 22px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .ring-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; text-align: center; padding: 0 6px; }
+
+.status-card { align-items: stretch; }
+.status-card-body { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; }
+.status-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 140px; }
+.legend-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); }
+.legend-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-row .dot.success { background: var(--success); }
+.legend-row .dot.primary { background: var(--primary); }
+.legend-row .dot.danger { background: var(--danger); }
+.legend-count { margin-left: auto; font-family: 'Oswald', sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); font-size: 16px; }
 </style>
 
 <div class="page-head">
@@ -122,17 +145,16 @@ require __DIR__ . '/includes/layout_header.php';
     </div>
   </div>
 
-  <div class="ring-card span-4 span-2-lg">
-    <div class="ring-title">Elfogadva</div>
-    <?php ring((string)$month['accepted']['dogs'], 'kutya', $acceptedPct, 'var(--success)'); ?>
-  </div>
-  <div class="ring-card span-4 span-2-lg">
-    <div class="ring-title">Függőben</div>
-    <?php ring((string)$month['pending']['dogs'], 'kutya elbírálásra vár', $pendingPct, 'var(--primary)'); ?>
-  </div>
-  <div class="ring-card span-4 span-2-lg">
-    <div class="ring-title">Elutasítva</div>
-    <?php ring((string)$month['declined']['dogs'], 'kutya', $declinedPct, 'var(--danger)'); ?>
+  <div class="ring-card status-card span-6-lg">
+    <div class="ring-title">Kutyák állapota</div>
+    <div class="status-card-body">
+      <?php statusDonut($month['accepted']['dogs'], $month['pending']['dogs'], $month['declined']['dogs']); ?>
+      <div class="status-legend">
+        <div class="legend-row"><span class="dot success"></span>Elfogadva<span class="legend-count"><?= $month['accepted']['dogs'] ?></span></div>
+        <div class="legend-row"><span class="dot primary"></span>Függőben<span class="legend-count"><?= $month['pending']['dogs'] ?></span></div>
+        <div class="legend-row"><span class="dot danger"></span>Elutasítva<span class="legend-count"><?= $month['declined']['dogs'] ?></span></div>
+      </div>
+    </div>
   </div>
 
   <div class="stat-tile">
