@@ -40,6 +40,16 @@ function getDb(): PDO {
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_bookings_dates ON bookings(date_from, date_to)');
 
+    // Lightweight migration: add columns introduced after the initial launch
+    // without wiping existing rows.
+    $existingCols = [];
+    foreach ($pdo->query('PRAGMA table_info(bookings)') as $col) {
+        $existingCols[] = $col['name'];
+    }
+    if (!in_array('attachments_json', $existingCols, true)) {
+        $pdo->exec('ALTER TABLE bookings ADD COLUMN attachments_json TEXT');
+    }
+
     return $pdo;
 }
 
@@ -161,18 +171,60 @@ function getAcceptedDogCounts(string $rangeStart, string $rangeEnd, ?int $exclud
     return $counts;
 }
 
-// Accepted bookings whose stay overlaps the given [rangeStart, rangeEnd] date
-// strings (YYYY-MM-DD, inclusive) — used by the calendar view.
-function getAcceptedBookingsInRange(string $rangeStart, string $rangeEnd): array {
+// Bookings of a given status whose stay overlaps [rangeStart, rangeEnd]
+// (YYYY-MM-DD, inclusive) — used by the calendar view.
+function getBookingsInRangeByStatus(string $status, string $rangeStart, string $rangeEnd): array {
     $pdo = getDb();
     $stmt = $pdo->prepare("
         SELECT * FROM bookings
-        WHERE status = 'accepted'
+        WHERE status = :status
           AND date_from <> ''
           AND date_from <= :rangeEnd
           AND (date_to >= :rangeStart OR date_to = '' OR date_to = 'Nincs megadva')
         ORDER BY date_from ASC
     ");
-    $stmt->execute([':rangeStart' => $rangeStart, ':rangeEnd' => $rangeEnd]);
+    $stmt->execute([':status' => $status, ':rangeStart' => $rangeStart, ':rangeEnd' => $rangeEnd]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Kept for backward compatibility with existing call sites.
+function getAcceptedBookingsInRange(string $rangeStart, string $rangeEnd): array {
+    return getBookingsInRangeByStatus('accepted', $rangeStart, $rangeEnd);
+}
+
+// ─── Booklet / photo attachments ───
+// Stored on disk under admin/data/uploads/{booking id}/ — that directory
+// inherits admin/data/.htaccess's "deny all", so files are only reachable
+// through admin/attachment.php after login.
+
+function bookingUploadsDir(int $bookingId): string {
+    return __DIR__ . '/../data/uploads/' . $bookingId;
+}
+
+function bookingAttachmentPath(int $bookingId, string $storedName): string {
+    return bookingUploadsDir($bookingId) . '/' . $storedName;
+}
+
+// Moves one already-uploaded file ($tmpPath, from $_FILES) into permanent
+// storage for $bookingId. Returns the stored filename, or null on failure —
+// never throws, since a failed save must not break the booking email flow.
+function saveBookingAttachmentFile(int $bookingId, string $tmpPath, string $originalName): ?string {
+    $dir = bookingUploadsDir($bookingId);
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        return null;
+    }
+    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $safeBase = preg_replace('/[^A-Za-z0-9_-]+/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    $storedName = uniqid('', true) . ($safeBase !== '' ? '_' . $safeBase : '') . ($ext !== '' ? '.' . $ext : '');
+    $dest = $dir . '/' . $storedName;
+
+    $moved = is_uploaded_file($tmpPath) ? move_uploaded_file($tmpPath, $dest) : copy($tmpPath, $dest);
+    return $moved ? $storedName : null;
+}
+
+// $files: list of ['field','name','stored','type','size'] — see send.php.
+function saveBookingAttachments(int $bookingId, array $files): bool {
+    $pdo = getDb();
+    $stmt = $pdo->prepare('UPDATE bookings SET attachments_json = :json WHERE id = :id');
+    return $stmt->execute([':json' => json_encode($files, JSON_UNESCAPED_UNICODE), ':id' => $bookingId]);
 }

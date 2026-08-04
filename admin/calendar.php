@@ -13,6 +13,7 @@ $last = (clone $first)->modify('last day of this month');
 $prevMonth = (clone $first)->modify('-1 month')->format('Y-m');
 $nextMonth = (clone $first)->modify('+1 month')->format('Y-m');
 $todayStr = date('Y-m-d');
+$showPending = !empty($_GET['pending']);
 
 $monthNames = ['Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'];
 $dayNames = ['H','K','Sze','Cs','P','Szo','V'];
@@ -21,9 +22,18 @@ $dayNames = ['H','K','Sze','Cs','P','Szo','V'];
 // row is complete even at month boundaries.
 $gridStart = (clone $first)->modify('-' . (((int)$first->format('N')) - 1) . ' days');
 $gridEnd = (clone $last)->modify('+' . (7 - (int)$last->format('N')) . ' days');
+$gridStartStr = $gridStart->format('Y-m-d');
+$gridEndStr = $gridEnd->format('Y-m-d');
 
-$bookings = getAcceptedBookingsInRange($gridStart->format('Y-m-d'), $gridEnd->format('Y-m-d'));
-$dayCounts = getAcceptedDogCounts($gridStart->format('Y-m-d'), $gridEnd->format('Y-m-d'));
+// The calendar always shows accepted stays; pending requests are an
+// optional overlay (dashed/amber) so staff can spot a potential clash
+// before deciding, without confusing them with confirmed bookings.
+$bookings = getBookingsInRangeByStatus('accepted', $gridStartStr, $gridEndStr);
+if ($showPending) {
+    $bookings = array_merge($bookings, getBookingsInRangeByStatus('pending', $gridStartStr, $gridEndStr));
+}
+// Capacity counting only ever considers confirmed (accepted) stays.
+$dayCounts = getAcceptedDogCounts($gridStartStr, $gridEndStr);
 
 // Pre-parse each booking's own [from, to] once.
 $parsed = [];
@@ -56,6 +66,7 @@ while ($cursor <= $gridEnd) {
             'label'     => $p['booking']['dog_name'] ?: 'Foglalás',
             'owner'     => $p['booking']['owner_name'],
             'dogs'      => (int)$p['booking']['dogs_count'],
+            'status'    => $p['booking']['status'],
             'startCol'  => (int)$clipStart->format('N'),
             'endCol'    => (int)$clipEnd->format('N'),
             'contStart' => $p['from'] < $weekStart,
@@ -88,18 +99,24 @@ $activeNav = 'calendar';
 require __DIR__ . '/includes/layout_header.php';
 ?>
 <style>
-.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
 .cal-nav a { font-family: 'Oswald', sans-serif; font-size: 13px; letter-spacing: 1px; text-decoration: none; color: var(--text-primary); border: 1.5px solid rgba(255,255,255,0.2); border-radius: var(--radius-sm); padding: 8px 16px; }
 .cal-nav a:hover { border-color: var(--primary); color: var(--primary); }
 .cal-nav h2 { font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+
+.cal-toggle-row { margin-bottom: 20px; }
+.cal-toggle { display: inline-flex; align-items: center; gap: 8px; font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; color: var(--text-muted); border: 1px solid var(--hairline); border-radius: 999px; padding: 8px 16px; }
+.cal-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.cal-toggle.active { background: rgba(249,153,5,0.15); border-color: rgba(249,153,5,0.4); color: var(--primary); }
+.cal-toggle .dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
 
 .cal-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
 .cal-dow { text-align: center; font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; padding: 4px 0; }
 
 .cal-body { border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; background: var(--card-bg); }
-.cal-week { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 22px; border-top: 1px solid var(--hairline); }
+.cal-week { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--hairline); }
 .cal-week:first-child { border-top: none; }
-.cal-daycell { grid-row: 1; padding: 6px 6px 2px; border-right: 1px solid var(--hairline); display: flex; align-items: flex-start; justify-content: space-between; min-height: 30px; }
+.cal-daycell { grid-row: 1; padding: 8px 8px 4px; border-right: 1px solid var(--hairline); display: flex; align-items: flex-start; justify-content: space-between; min-height: 34px; }
 .cal-daycell:last-child { border-right: none; }
 .cal-daycell.out-month { background: rgba(0,0,0,0.18); }
 .cal-daycell.out-month .cal-daynum { color: rgba(255,255,255,0.25); }
@@ -108,19 +125,20 @@ require __DIR__ . '/includes/layout_header.php';
 .cal-daycell.today .cal-daynum { color: var(--on-primary); background: var(--primary); border-radius: 999px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; }
 .cal-full-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--danger); margin-top: 4px; flex-shrink: 0; }
 
-.cal-bar { grid-row: span 1; margin: 1px 2px; padding: 2px 8px; background: rgba(46,125,50,0.28); border: 1px solid rgba(111,207,115,0.5); color: #d8f5d9; font-size: 11px; font-weight: 600; border-radius: 4px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; }
+.cal-bar { margin: 1px 2px; padding: 3px 8px; background: rgba(46,125,50,0.28); border: 1px solid rgba(111,207,115,0.5); color: #d8f5d9; font-size: 11px; font-weight: 600; border-radius: 4px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; }
 .cal-bar:hover { background: rgba(46,125,50,0.45); }
 .cal-bar.cont-start { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-style: dashed; margin-left: 0; }
 .cal-bar.cont-end { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-style: dashed; margin-right: 0; }
+.cal-bar.pending { background: rgba(249,153,5,0.16); border: 1px dashed rgba(249,153,5,0.6); color: #ffd9a0; }
+.cal-bar.pending:hover { background: rgba(249,153,5,0.28); }
 
 .cal-legend { margin-top: 16px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .cal-legend .legend-item { display: flex; align-items: center; gap: 8px; }
 .cal-legend .cal-bar { width: 18px; height: 12px; padding: 0; display: inline-block; margin: 0; }
 
 @media (max-width: 720px) {
-  .cal-week { grid-auto-rows: 18px; }
-  .cal-daycell { padding: 3px; min-height: 22px; }
-  .cal-bar { font-size: 9px; padding: 1px 4px; }
+  .cal-daycell { padding: 4px; min-height: 26px; }
+  .cal-bar { font-size: 9px; padding: 2px 4px; }
 }
 </style>
 
@@ -129,9 +147,16 @@ require __DIR__ . '/includes/layout_header.php';
 </div>
 
 <div class="cal-nav">
-  <a href="calendar.php?month=<?= $prevMonth ?>">&larr; Előző</a>
+  <a href="calendar.php?month=<?= $prevMonth ?><?= $showPending ? '&pending=1' : '' ?>">&larr; Előző</a>
   <h2><?= $monthNames[(int)$first->format('n') - 1] ?> <?= $first->format('Y') ?></h2>
-  <a href="calendar.php?month=<?= $nextMonth ?>">Következő &rarr;</a>
+  <a href="calendar.php?month=<?= $nextMonth ?><?= $showPending ? '&pending=1' : '' ?>">Következő &rarr;</a>
+</div>
+
+<div class="cal-toggle-row">
+  <a class="cal-toggle<?= $showPending ? ' active' : '' ?>" href="calendar.php?month=<?= $first->format('Y-m') ?><?= $showPending ? '' : '&pending=1' ?>">
+    <span class="dot"></span>
+    <?= $showPending ? 'Függőben lévők elrejtése' : 'Függőben lévő foglalások mutatása' ?>
+  </a>
 </div>
 
 <div class="cal-dow-row">
@@ -142,7 +167,7 @@ require __DIR__ . '/includes/layout_header.php';
 
 <div class="cal-body">
   <?php foreach ($weeks as $week): ?>
-    <div class="cal-week" style="grid-template-rows: 30px repeat(<?= $week['maxLanes'] ?>, 22px);">
+    <div class="cal-week" style="grid-template-rows: 34px repeat(<?= $week['maxLanes'] ?>, 26px);">
       <?php foreach ($week['days'] as $i => $day):
         $dateKey = $day->format('Y-m-d');
         $inMonth = $day->format('Y-m') === $first->format('Y-m');
@@ -159,11 +184,11 @@ require __DIR__ . '/includes/layout_header.php';
       <?php endforeach; ?>
 
       <?php foreach ($week['events'] as $ev): ?>
-        <a class="cal-bar<?= $ev['contStart'] ? ' cont-start' : '' ?><?= $ev['contEnd'] ? ' cont-end' : '' ?>"
+        <a class="cal-bar<?= $ev['status'] === 'pending' ? ' pending' : '' ?><?= $ev['contStart'] ? ' cont-start' : '' ?><?= $ev['contEnd'] ? ' cont-end' : '' ?>"
            style="grid-column: <?= $ev['startCol'] ?> / <?= $ev['endCol'] + 1 ?>; grid-row: <?= $ev['lane'] + 2 ?>;"
            href="booking.php?id=<?= (int)$ev['id'] ?>"
-           title="<?= htmlspecialchars($ev['label'] . ' — ' . $ev['owner'] . ($ev['dogs'] > 1 ? ' (' . $ev['dogs'] . ' kutya)' : '')) ?>">
-          🐾 <?= htmlspecialchars($ev['label']) ?><?= $ev['dogs'] > 1 ? ' ×' . $ev['dogs'] : '' ?>
+           title="<?= htmlspecialchars($ev['label'] . ' — ' . $ev['owner'] . ($ev['dogs'] > 1 ? ' (' . $ev['dogs'] . ' kutya)' : '') . ($ev['status'] === 'pending' ? ' [Függőben]' : '')) ?>">
+          <?= $ev['status'] === 'pending' ? '⏳' : '🐾' ?> <?= htmlspecialchars($ev['label']) ?><?= $ev['dogs'] > 1 ? ' ×' . $ev['dogs'] : '' ?>
         </a>
       <?php endforeach; ?>
     </div>
@@ -172,6 +197,9 @@ require __DIR__ . '/includes/layout_header.php';
 
 <div class="cal-legend">
   <div class="legend-item"><span class="cal-bar"></span> Elfogadott foglalás</div>
+  <?php if ($showPending): ?>
+  <div class="legend-item"><span class="cal-bar pending"></span> Függőben lévő foglalás</div>
+  <?php endif; ?>
   <div class="legend-item"><span class="cal-full-dot"></span> Betelt nap (<?= MAX_DAILY_DOGS ?> kutya)</div>
 </div>
 

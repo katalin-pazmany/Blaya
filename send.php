@@ -209,7 +209,7 @@ if (!$name || !$email || !$dogName) {
 // Ha ez meghiúsul, a foglalási email küldése akkor is folytatódik —
 // a mentés nem szakíthatja meg a meglévő emailes folyamatot.
 require_once __DIR__ . '/admin/includes/db.php';
-saveBooking([
+$bookingId = saveBooking([
     'owner_name'      => $name,
     'owner_phone'     => $phone,
     'owner_email'     => $email,
@@ -253,17 +253,37 @@ saveBooking([
 ]);
 
 // ─── Képek feldolgozása ───
+// A kiskönyv/fotó fájlokat tartósan is elmentjük (admin/data/uploads/{id}/),
+// hogy az admin felületen is megnézhetők legyenek — nem csak az emailben.
 $attachments = [];
+$savedFiles = [];
 foreach($_FILES as $key => $file) {
     if(strpos($key, 'booklet_') === 0 || strpos($key, 'photo_') === 0) {
         if($file['error'] === UPLOAD_ERR_OK) {
+            $originalName = basename($file['name']);
+            $storedName = $bookingId ? saveBookingAttachmentFile($bookingId, $file['tmp_name'], $originalName) : null;
+            $content = $storedName
+                ? file_get_contents(bookingAttachmentPath($bookingId, $storedName))
+                : file_get_contents($file['tmp_name']);
             $attachments[] = [
-                'name'    => basename($file['name']),
+                'name'    => $originalName,
                 'type'    => $file['type'],
-                'content' => base64_encode(file_get_contents($file['tmp_name'])),
+                'content' => base64_encode($content),
             ];
+            if ($storedName) {
+                $savedFiles[] = [
+                    'field'  => $key,
+                    'name'   => $originalName,
+                    'stored' => $storedName,
+                    'type'   => $file['type'],
+                    'size'   => $file['size'],
+                ];
+            }
         }
     }
+}
+if ($bookingId && !empty($savedFiles)) {
+    saveBookingAttachments($bookingId, $savedFiles);
 }
 
 // ─── Stílusok ───

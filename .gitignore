@@ -2,3 +2,4 @@
 admin/config.php
 admin/data/*.sqlite
 admin/data/*.sqlite-journal
+admin/data/uploads/

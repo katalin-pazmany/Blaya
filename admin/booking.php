@@ -37,6 +37,8 @@ if (!$booking) {
 }
 
 $raw = json_decode($booking['raw_json'] ?? '[]', true) ?: [];
+$attachments = json_decode($booking['attachments_json'] ?? '[]', true) ?: [];
+$imageExts = ['jpg', 'jpeg', 'png'];
 $csrf = csrf_token();
 $statusLabels = ['pending' => 'Függőben', 'accepted' => 'Elfogadva', 'declined' => 'Elutasítva'];
 
@@ -78,7 +80,13 @@ require __DIR__ . '/includes/layout_header.php';
 .dl-label { color: var(--text-muted); font-weight: 600; width: 220px; white-space: nowrap; }
 .dl-sec { padding-top: 20px !important; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); border-bottom: 2px solid var(--primary) !important; }
 .dl-warn { color: #ff6b6b; font-weight: 700; }
-.dl-actions { display: flex; gap: 10px; margin-top: 24px; }
+.dl-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+.dl-attach-title { font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); margin-bottom: 14px; }
+.dl-attach-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.dl-attach-thumb { display: block; width: 88px; height: 88px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--hairline); }
+.dl-attach-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dl-attach-file { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--text-primary); text-decoration: none; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-attach-file:hover, .dl-attach-thumb:hover { border-color: var(--primary); }
 </style>
 
 <a class="dl-back" href="bookings.php">&larr; Vissza a foglalásokhoz</a>
@@ -92,6 +100,28 @@ require __DIR__ . '/includes/layout_header.php';
 <div class="alert">
   ⚠ Kapacitás figyelmeztetés: <?= implode(', ', array_map(function ($d) { return htmlspecialchars($d); }, $fullDays)) ?>
   napo<?= count($fullDays) > 1 ? 'kon' : 'n' ?> már <?= MAX_DAILY_DOGS ?> kutya van elfogadva — ezt figyelembe kell venni elfogadás előtt.
+</div>
+<?php endif; ?>
+
+<?php if (!empty($attachments)): ?>
+<div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
+  <div class="dl-attach-title">Kiskönyv / oltási dokumentáció, fotók</div>
+  <div class="dl-attach-grid">
+    <?php foreach ($attachments as $a):
+      $ext = strtolower(pathinfo($a['name'] ?? '', PATHINFO_EXTENSION));
+      $href = 'attachment.php?id=' . (int)$booking['id'] . '&file=' . urlencode($a['stored'] ?? '');
+    ?>
+      <?php if (in_array($ext, $imageExts, true)): ?>
+        <a class="dl-attach-thumb" href="<?= htmlspecialchars($href) ?>" target="_blank" rel="noopener" title="<?= htmlspecialchars($a['name'] ?? '') ?>">
+          <img src="<?= htmlspecialchars($href) ?>" alt="<?= htmlspecialchars($a['name'] ?? '') ?>" loading="lazy">
+        </a>
+      <?php else: ?>
+        <a class="dl-attach-file" href="<?= htmlspecialchars($href) ?>" target="_blank" rel="noopener">
+          📄 <?= htmlspecialchars($a['name'] ?? 'Dokumentum') ?>
+        </a>
+      <?php endif; ?>
+    <?php endforeach; ?>
+  </div>
 </div>
 <?php endif; ?>
 

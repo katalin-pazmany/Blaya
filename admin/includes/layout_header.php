@@ -84,7 +84,7 @@ th { font-family: 'Oswald', sans-serif; font-size: 11px; text-transform: upperca
 tbody tr:hover { background: rgba(255,255,255,0.03); }
 tbody a.row-link { color: var(--text-primary); text-decoration: none; font-weight: 600; }
 tbody a.row-link:hover { color: var(--primary); }
-td.actions-cell { white-space: normal; display: flex; gap: 6px; flex-wrap: wrap; }
+td.actions-cell { display: flex; gap: 6px; flex-wrap: nowrap; }
 
 .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
 
