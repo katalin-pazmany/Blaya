@@ -94,6 +94,13 @@ while ($cursor <= $gridEnd) {
     $cursor->modify('+7 days');
 }
 
+// Every week row uses the *month's* tallest lane count, not its own — so
+// all week rows are the same height instead of a jagged, variable grid.
+$globalMaxLanes = 1;
+foreach ($weeks as $w) {
+    $globalMaxLanes = max($globalMaxLanes, $w['maxLanes']);
+}
+
 $pageTitle = 'Naptár';
 $activeNav = 'calendar';
 require __DIR__ . '/includes/layout_header.php';
@@ -116,7 +123,7 @@ require __DIR__ . '/includes/layout_header.php';
 .cal-body { border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; background: var(--card-bg); }
 .cal-week { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--hairline); }
 .cal-week:first-child { border-top: none; }
-.cal-daycell { grid-row: 1; padding: 8px 8px 4px; border-right: 1px solid var(--hairline); display: flex; align-items: flex-start; justify-content: space-between; min-height: 34px; }
+.cal-daycell { grid-row: 1; padding: 10px 10px 4px; border-right: 1px solid var(--hairline); display: flex; align-items: flex-start; justify-content: space-between; min-height: 40px; }
 .cal-daycell:last-child { border-right: none; }
 .cal-daycell.out-month { background: rgba(0,0,0,0.18); }
 .cal-daycell.out-month .cal-daynum { color: rgba(255,255,255,0.25); }
@@ -137,7 +144,7 @@ require __DIR__ . '/includes/layout_header.php';
 .cal-legend .cal-bar { width: 18px; height: 12px; padding: 0; display: inline-block; margin: 0; }
 
 @media (max-width: 720px) {
-  .cal-daycell { padding: 4px; min-height: 26px; }
+  .cal-daycell { padding: 4px; min-height: 30px; }
   .cal-bar { font-size: 9px; padding: 2px 4px; }
 }
 </style>
@@ -167,7 +174,7 @@ require __DIR__ . '/includes/layout_header.php';
 
 <div class="cal-body">
   <?php foreach ($weeks as $week): ?>
-    <div class="cal-week" style="grid-template-rows: 34px repeat(<?= $week['maxLanes'] ?>, 26px);">
+    <div class="cal-week" style="grid-template-rows: 40px repeat(<?= $globalMaxLanes ?>, 30px);">
       <?php foreach ($week['days'] as $i => $day):
         $dateKey = $day->format('Y-m-d');
         $inMonth = $day->format('Y-m') === $first->format('Y-m');

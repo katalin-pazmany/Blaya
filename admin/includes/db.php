@@ -228,3 +228,53 @@ function saveBookingAttachments(int $bookingId, array $files): bool {
     $stmt = $pdo->prepare('UPDATE bookings SET attachments_json = :json WHERE id = :id');
     return $stmt->execute([':json' => json_encode($files, JSON_UNESCAPED_UNICODE), ':id' => $bookingId]);
 }
+
+// ─── Dashboard stats ───
+// Bookings/dogs/income grouped by status. Pass $rangeStart/$rangeEnd
+// (YYYY-MM-DD) to scope to bookings whose stay *starts* in that window —
+// same field the calendar itself is built on, so "this month" always means
+// the same thing across the admin. Pass both as null for all-time totals.
+function getStatsForRange(?string $rangeStart, ?string $rangeEnd): array {
+    $pdo = getDb();
+    $where = '';
+    $params = [];
+    if ($rangeStart !== null && $rangeEnd !== null) {
+        $where = 'WHERE date_from >= :rangeStart AND date_from <= :rangeEnd';
+        $params = [':rangeStart' => $rangeStart, ':rangeEnd' => $rangeEnd];
+    }
+    $stmt = $pdo->prepare("
+        SELECT status,
+               COUNT(*) AS bookings,
+               COALESCE(SUM(dogs_count), 0) AS dogs,
+               COALESCE(SUM(total), 0) AS total
+        FROM bookings
+        {$where}
+        GROUP BY status
+    ");
+    $stmt->execute($params);
+
+    $byStatus = [
+        'accepted' => ['bookings' => 0, 'dogs' => 0, 'total' => 0],
+        'declined' => ['bookings' => 0, 'dogs' => 0, 'total' => 0],
+        'pending'  => ['bookings' => 0, 'dogs' => 0, 'total' => 0],
+    ];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isset($byStatus[$row['status']])) {
+            $byStatus[$row['status']] = [
+                'bookings' => (int)$row['bookings'],
+                'dogs'     => (int)$row['dogs'],
+                'total'    => (int)$row['total'],
+            ];
+        }
+    }
+
+    $decided = $byStatus['accepted']['bookings'] + $byStatus['declined']['bookings'];
+
+    return [
+        'accepted'       => $byStatus['accepted'],
+        'declined'       => $byStatus['declined'],
+        'pending'        => $byStatus['pending'],
+        'requestsCount'  => $byStatus['accepted']['bookings'] + $byStatus['declined']['bookings'] + $byStatus['pending']['bookings'],
+        'acceptanceRate' => $decided > 0 ? round($byStatus['accepted']['bookings'] / $decided * 100) : null,
+    ];
+}

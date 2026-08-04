@@ -103,6 +103,7 @@ td.actions-cell { display: flex; gap: 6px; flex-wrap: nowrap; }
   <ul class="nav-links">
     <li><a href="bookings.php" class="<?= ($activeNav ?? '') === 'bookings' ? 'active' : '' ?>">Foglalások</a></li>
     <li><a href="calendar.php" class="<?= ($activeNav ?? '') === 'calendar' ? 'active' : '' ?>">Naptár</a></li>
+    <li><a href="dashboard.php" class="<?= ($activeNav ?? '') === 'dashboard' ? 'active' : '' ?>">Áttekintés</a></li>
   </ul>
   <a class="nav-logout" href="logout.php">Kijelentkezés</a>
 </nav>
