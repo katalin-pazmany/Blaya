@@ -10,9 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $id = (int)($_POST['id'] ?? 0);
     $action = $_POST['action'] ?? '';
-    $newStatus = ['accept' => 'accepted', 'decline' => 'declined', 'reset' => 'pending'][$action] ?? null;
-    if ($id && $newStatus) {
-        updateBookingStatus($id, $newStatus);
+    if ($id && $action === 'delete') {
+        deleteBooking($id);
+    } else {
+        $newStatus = ['accept' => 'accepted', 'decline' => 'declined'][$action] ?? null;
+        if ($id && $newStatus) {
+            updateBookingStatus($id, $newStatus);
+        }
     }
     header('Location: bookings.php' . (isset($_GET['status']) ? '?status=' . urlencode($_GET['status']) : ''));
     exit;
@@ -33,7 +37,7 @@ require __DIR__ . '/includes/layout_header.php';
 ?>
 
 <div class="page-head">
-  <h1>Fogla<span>lások</span></h1>
+  <h1>Foglalások</h1>
 </div>
 
 <div class="filter-tabs">
@@ -70,23 +74,25 @@ require __DIR__ . '/includes/layout_header.php';
       <td><?= htmlspecialchars($b['date_to'] ?: '–') ?></td>
       <td><?= number_format((float)$b['total'], 0, ',', ' ') ?> Ft</td>
       <td><span class="badge badge-<?= htmlspecialchars($b['status']) ?>"><?= htmlspecialchars($statusLabels[$b['status']] ?? $b['status']) ?></span></td>
-      <td>
-        <?php if ($b['status'] !== 'accepted'): ?>
+      <td class="actions-cell">
         <form method="post" style="display:inline">
           <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
           <input type="hidden" name="id" value="<?= (int)$b['id'] ?>">
           <input type="hidden" name="action" value="accept">
-          <button type="submit" class="btn btn-success btn-sm">Elfogad</button>
+          <button type="submit" class="btn btn-success btn-sm" <?= $b['status'] === 'accepted' ? 'disabled' : '' ?>>Elfogad</button>
         </form>
-        <?php endif; ?>
-        <?php if ($b['status'] !== 'declined'): ?>
         <form method="post" style="display:inline">
           <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
           <input type="hidden" name="id" value="<?= (int)$b['id'] ?>">
           <input type="hidden" name="action" value="decline">
-          <button type="submit" class="btn btn-danger btn-sm">Elutasít</button>
+          <button type="submit" class="btn btn-danger btn-sm" <?= $b['status'] === 'declined' ? 'disabled' : '' ?>>Elutasít</button>
         </form>
-        <?php endif; ?>
+        <form method="post" style="display:inline" onsubmit="return confirm('Biztosan törlöd <?= htmlspecialchars(addslashes($b['dog_name'] ?: 'ezt a foglalást')) ?> foglalását? Ez nem vonható vissza.');">
+          <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
+          <input type="hidden" name="id" value="<?= (int)$b['id'] ?>">
+          <input type="hidden" name="action" value="delete">
+          <button type="submit" class="btn btn-delete btn-sm">Töröl</button>
+        </form>
       </td>
     </tr>
     <?php endforeach; ?>

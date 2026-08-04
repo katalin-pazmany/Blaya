@@ -2,6 +2,10 @@
 // PDO/SQLite storage for booking requests. No external DB service required —
 // works on standard shared PHP hosting (pdo_sqlite ships with PHP by default).
 
+// BLAYA is a small-capacity kennel — the site's own FAQ states a hard cap of
+// 4 dogs at a time. Used to flag over-booked days in the calendar/detail view.
+const MAX_DAILY_DOGS = 4;
+
 function getDb(): PDO {
     static $pdo = null;
     if ($pdo !== null) return $pdo;
@@ -106,6 +110,55 @@ function updateBookingStatus(int $id, string $status): bool {
     $pdo = getDb();
     $stmt = $pdo->prepare('UPDATE bookings SET status = :status WHERE id = :id');
     return $stmt->execute([':status' => $status, ':id' => $id]);
+}
+
+function deleteBooking(int $id): bool {
+    $pdo = getDb();
+    $stmt = $pdo->prepare('DELETE FROM bookings WHERE id = :id');
+    return $stmt->execute([':id' => $id]);
+}
+
+// Total accepted dogs per calendar day within [rangeStart, rangeEnd]
+// (YYYY-MM-DD, inclusive) — e.g. ['2026-08-20' => 3, '2026-08-21' => 4].
+// $excludeId lets a booking's own detail page check capacity against
+// *other* bookings only (so it doesn't flag itself as a conflict).
+function getAcceptedDogCounts(string $rangeStart, string $rangeEnd, ?int $excludeId = null): array {
+    $pdo = getDb();
+    $sql = "
+        SELECT * FROM bookings
+        WHERE status = 'accepted'
+          AND date_from <> ''
+          AND date_from <= :rangeEnd
+          AND (date_to >= :rangeStart OR date_to = '' OR date_to = 'Nincs megadva')
+    ";
+    $params = [':rangeStart' => $rangeStart, ':rangeEnd' => $rangeEnd];
+    if ($excludeId !== null) {
+        $sql .= ' AND id <> :excludeId';
+        $params[':excludeId'] = $excludeId;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $rangeStartDt = DateTime::createFromFormat('Y-m-d', $rangeStart);
+    $rangeEndDt = DateTime::createFromFormat('Y-m-d', $rangeEnd);
+    $counts = [];
+    foreach ($rows as $b) {
+        $from = DateTime::createFromFormat('Y-m-d', $b['date_from']);
+        if (!$from) continue;
+        $to = DateTime::createFromFormat('Y-m-d', $b['date_to']);
+        if (!$to || $to < $from) $to = clone $from;
+
+        $cursor = max($from, $rangeStartDt);
+        $stop = min($to, $rangeEndDt);
+        $dogs = max(1, (int)$b['dogs_count']);
+        while ($cursor <= $stop) {
+            $key = $cursor->format('Y-m-d');
+            $counts[$key] = ($counts[$key] ?? 0) + $dogs;
+            $cursor->modify('+1 day');
+        }
+    }
+    return $counts;
 }
 
 // Accepted bookings whose stay overlaps the given [rangeStart, rangeEnd] date

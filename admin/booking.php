@@ -3,6 +3,26 @@ require_once __DIR__ . '/includes/auth.php';
 require_login();
 require_once __DIR__ . '/includes/db.php';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf($_POST['csrf'] ?? null)) {
+        http_response_code(400);
+        die('Érvénytelen kérés.');
+    }
+    $postId = (int)($_POST['id'] ?? 0);
+    $action = $_POST['action'] ?? '';
+    if ($postId && $action === 'delete') {
+        deleteBooking($postId);
+        header('Location: bookings.php');
+        exit;
+    }
+    $newStatus = ['accept' => 'accepted', 'decline' => 'declined'][$action] ?? null;
+    if ($postId && $newStatus) {
+        updateBookingStatus($postId, $newStatus);
+    }
+    header('Location: booking.php?id=' . $postId);
+    exit;
+}
+
 $id = (int)($_GET['id'] ?? 0);
 $booking = $id ? getBooking($id) : null;
 
@@ -19,6 +39,21 @@ if (!$booking) {
 $raw = json_decode($booking['raw_json'] ?? '[]', true) ?: [];
 $csrf = csrf_token();
 $statusLabels = ['pending' => 'Függőben', 'accepted' => 'Elfogadva', 'declined' => 'Elutasítva'];
+
+// Flag any day in this booking's own date range that's already at/over the
+// kennel's 4-dog capacity from *other* accepted bookings — helps decide
+// whether to accept a pending request.
+$fullDays = [];
+$rangeFrom = DateTime::createFromFormat('Y-m-d', $booking['date_from']);
+if ($rangeFrom) {
+    $rangeTo = DateTime::createFromFormat('Y-m-d', $booking['date_to']);
+    if (!$rangeTo || $rangeTo < $rangeFrom) $rangeTo = clone $rangeFrom;
+    $dayCounts = getAcceptedDogCounts($rangeFrom->format('Y-m-d'), $rangeTo->format('Y-m-d'), (int)$booking['id']);
+    foreach ($dayCounts as $date => $count) {
+        if ($count >= MAX_DAILY_DOGS) $fullDays[] = $date;
+    }
+    sort($fullDays);
+}
 
 function row(string $label, $value): void {
     if ($value === null || $value === '') return;
@@ -52,6 +87,13 @@ require __DIR__ . '/includes/layout_header.php';
   <h1><?= htmlspecialchars($booking['dog_name'] ?: 'Foglalás') ?></h1>
   <span class="badge badge-<?= htmlspecialchars($booking['status']) ?>"><?= htmlspecialchars($statusLabels[$booking['status']] ?? $booking['status']) ?></span>
 </div>
+
+<?php if (!empty($fullDays)): ?>
+<div class="alert">
+  ⚠ Kapacitás figyelmeztetés: <?= implode(', ', array_map(function ($d) { return htmlspecialchars($d); }, $fullDays)) ?>
+  napo<?= count($fullDays) > 1 ? 'kon' : 'n' ?> már <?= MAX_DAILY_DOGS ?> kutya van elfogadva — ezt figyelembe kell venni elfogadás előtt.
+</div>
+<?php endif; ?>
 
 <div class="card" style="padding: 8px 12px; margin-bottom: 20px;">
 <table class="dl-table">
@@ -125,31 +167,25 @@ require __DIR__ . '/includes/layout_header.php';
 </div>
 
 <div class="dl-actions">
-  <?php if ($booking['status'] !== 'accepted'): ?>
-  <form method="post" action="bookings.php">
+  <form method="post">
     <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
     <input type="hidden" name="id" value="<?= (int)$booking['id'] ?>">
     <input type="hidden" name="action" value="accept">
-    <button type="submit" class="btn btn-success">Elfogadás</button>
+    <button type="submit" class="btn btn-success" <?= $booking['status'] === 'accepted' ? 'disabled' : '' ?>>Elfogadás</button>
   </form>
-  <?php endif; ?>
-  <?php if ($booking['status'] !== 'declined'): ?>
-  <form method="post" action="bookings.php">
+  <form method="post">
     <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
     <input type="hidden" name="id" value="<?= (int)$booking['id'] ?>">
     <input type="hidden" name="action" value="decline">
-    <button type="submit" class="btn btn-danger">Elutasítás</button>
+    <button type="submit" class="btn btn-danger" <?= $booking['status'] === 'declined' ? 'disabled' : '' ?>>Elutasítás</button>
   </form>
-  <?php endif; ?>
-  <?php if ($booking['status'] !== 'pending'): ?>
-  <form method="post" action="bookings.php">
+  <a href="mailto:<?= htmlspecialchars($booking['owner_email']) ?>" class="btn btn-outline">✉ Email írása</a>
+  <form method="post" onsubmit="return confirm('Biztosan törlöd <?= htmlspecialchars(addslashes($booking['dog_name'] ?: 'ezt a foglalást')) ?> foglalását? Ez nem vonható vissza.');" style="margin-left:auto;">
     <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
     <input type="hidden" name="id" value="<?= (int)$booking['id'] ?>">
-    <input type="hidden" name="action" value="reset">
-    <button type="submit" class="btn btn-outline">Visszaállítás függőbe</button>
+    <input type="hidden" name="action" value="delete">
+    <button type="submit" class="btn btn-delete">Törlés</button>
   </form>
-  <?php endif; ?>
-  <a href="mailto:<?= htmlspecialchars($booking['owner_email']) ?>" class="btn btn-outline">✉ Email írása</a>
 </div>
 
 <?php require __DIR__ . '/includes/layout_footer.php'; ?>

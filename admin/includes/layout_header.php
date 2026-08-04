@@ -51,8 +51,7 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(20,20,20,0.97); b
 
 main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
 .page-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
-.page-head h1 { font-size: 26px; text-transform: uppercase; letter-spacing: 1px; }
-.page-head h1 span { color: var(--primary); }
+.page-head h1 { font-size: 26px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); }
 
 .card { background: var(--card-bg); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
 .btn { font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 1px; padding: 10px 20px; border-radius: var(--radius-sm); text-decoration: none; border: none; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
@@ -64,7 +63,10 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
 .btn-success:hover { filter: brightness(1.1); }
 .btn-danger { background: transparent; color: var(--danger); border: 1.5px solid rgba(222,14,14,0.4); }
 .btn-danger:hover { background: rgba(222,14,14,0.12); }
+.btn-delete { background: var(--danger); color: #fff; }
+.btn-delete:hover { filter: brightness(1.1); }
 .btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 
 .badge { display: inline-block; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
 .badge-pending { background: rgba(249,153,5,0.15); color: var(--primary); border: 1px solid rgba(249,153,5,0.4); }
@@ -82,6 +84,7 @@ th { font-family: 'Oswald', sans-serif; font-size: 11px; text-transform: upperca
 tbody tr:hover { background: rgba(255,255,255,0.03); }
 tbody a.row-link { color: var(--text-primary); text-decoration: none; font-weight: 600; }
 tbody a.row-link:hover { color: var(--primary); }
+td.actions-cell { white-space: normal; display: flex; gap: 6px; flex-wrap: wrap; }
 
 .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
 

@@ -47,8 +47,14 @@ $csrf = csrf_token();
   --shadow-md: 0 1px 2px rgba(0,0,0,0.28), 0 6px 16px -4px rgba(0,0,0,0.40);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Lato', sans-serif; background: var(--dark); color: var(--text-secondary); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-.login-card { width: 100%; max-width: 360px; background: var(--card-bg); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 36px 32px; text-align: center; }
+body {
+  font-family: 'Lato', sans-serif;
+  background:
+    linear-gradient(180deg, rgba(26,26,26,0.80) 0%, rgba(26,26,26,0.92) 55%, rgba(26,26,26,0.98) 100%),
+    url('../husky_hero.jpeg') center 30% / cover no-repeat fixed;
+  color: var(--text-secondary); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.login-card { width: 100%; max-width: 360px; background: rgba(34,34,34,0.9); backdrop-filter: blur(6px); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: 0 2px 4px rgba(0,0,0,0.30), 0 24px 56px -12px rgba(0,0,0,0.65); padding: 36px 32px; text-align: center; }
 .login-card img { width: 64px; height: 64px; object-fit: contain; margin-bottom: 8px; }
 .login-card h1 { font-family: 'Oswald', sans-serif; font-size: 20px; color: var(--white); letter-spacing: 1px; margin-bottom: 4px; }
 .login-card .sub { font-family: 'Dancing Script', cursive; font-size: 15px; color: var(--primary); margin-bottom: 24px; }
