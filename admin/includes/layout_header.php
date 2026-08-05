@@ -77,14 +77,37 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
 .filter-tabs a { font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; color: var(--text-muted); padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid var(--hairline); }
 .filter-tabs a.active, .filter-tabs a:hover { color: var(--on-primary); background: var(--primary); border-color: var(--primary); }
 
-.table-wrap { overflow-x: auto; border-radius: var(--radius-lg); }
-table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--hairline); font-size: 14px; white-space: nowrap; }
+.table-wrap { overflow-x: auto; border-radius: var(--radius-lg); padding: 16px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { text-align: left; vertical-align: middle; padding: 16px; border-bottom: 1px solid var(--hairline); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 th { font-family: 'Oswald', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
-tbody tr:hover { background: rgba(255,255,255,0.03); }
+/* Scoped to the bookings list specifically (.table-wrap) — the booking
+   detail page's label/value table uses plain <table>, not this wrapper,
+   and stays left-aligned as a details list should. Dog name (2nd column)
+   stays left-aligned too; everything else reads better centered. */
+.table-wrap th, .table-wrap td { text-align: center; }
+.table-wrap th:nth-child(2), .table-wrap td:nth-child(2) { text-align: left; }
+tbody tr:nth-child(even) { background: rgba(255,255,255,0.025); }
+tbody tr:hover { background: rgba(255,255,255,0.06); }
 tbody a.row-link { color: var(--text-primary); text-decoration: none; font-weight: 600; }
 tbody a.row-link:hover { color: var(--primary); }
-td.actions-cell { display: flex; gap: 6px; flex-wrap: nowrap; }
+td.actions-cell { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: nowrap; overflow: visible; }
+
+/* Status badge is a pill, not plain text — never let the cell's ellipsis
+   clip it; the badge itself already keeps its label on one line. */
+td.col-status { overflow: visible; padding-left: 8px; padding-right: 8px; }
+
+/* Icon-only row actions — keeps the actions column narrow so the table
+   fits without a horizontal scrollbar at normal admin screen widths. */
+.icon-btn { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.icon-btn svg { width: 15px; height: 15px; }
+
+@media (max-width: 900px) {
+  .col-received { display: none; }
+}
+@media (max-width: 640px) {
+  .col-owner { display: none; }
+}
 
 .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
 

@@ -58,10 +58,17 @@ body {
 .login-card img { width: 64px; height: 64px; object-fit: contain; margin-bottom: 8px; }
 .login-card h1 { font-family: 'Oswald', sans-serif; font-size: 20px; color: var(--white); letter-spacing: 1px; margin-bottom: 4px; }
 .login-card .sub { font-family: 'Dancing Script', cursive; font-size: 15px; color: var(--primary); margin-bottom: 24px; }
-.login-card input[type="password"] { width: 100%; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: 12px 14px; color: var(--white); font-size: 15px; margin-bottom: 16px; }
-.login-card input[type="password"]:focus { outline: none; border-color: var(--primary); }
+.password-field { position: relative; margin-bottom: 16px; }
+.password-field input { width: 100%; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: 12px 44px 12px 14px; color: var(--white); font-size: 15px; }
+.password-field input:focus { outline: none; border-color: var(--primary); }
 .login-card button { width: 100%; background: var(--primary); color: var(--on-primary); font-family: 'Oswald', sans-serif; font-weight: 700; letter-spacing: 1.5px; font-size: 14px; padding: 13px; border: none; border-radius: var(--radius-md); cursor: pointer; transition: background .2s; }
 .login-card button:hover { background: var(--primary-hover); }
+.login-card button.password-toggle { position: absolute; top: 0; right: 0; bottom: 0; width: 40px; height: auto; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; }
+.login-card button.password-toggle:hover { background: none; color: var(--white); }
+.password-toggle svg { width: 20px; height: 20px; }
+.password-toggle .icon-hide { display: none; }
+.password-toggle.is-visible .icon-show { display: none; }
+.password-toggle.is-visible .icon-hide { display: block; }
 .login-error { background: rgba(222,14,14,0.12); border: 1px solid rgba(222,14,14,0.4); color: #ff9d9d; padding: 10px 14px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 16px; }
 </style>
 </head>
@@ -72,8 +79,27 @@ body {
   <div class="sub">Foglalások kezelése</div>
   <?php if ($error): ?><div class="login-error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
   <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
-  <input type="password" name="password" placeholder="Jelszó" autofocus required>
+  <div class="password-field">
+    <input type="password" name="password" id="password" placeholder="Jelszó" autofocus required autocomplete="current-password">
+    <button type="button" class="password-toggle" id="password-toggle" aria-label="Jelszó megjelenítése" aria-pressed="false">
+      <svg class="icon-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+      <svg class="icon-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a13.16 13.16 0 0 1-3.22 4.19M6.61 6.61C3.86 8.36 1 12 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+    </button>
+  </div>
   <button type="submit">Belépés</button>
 </form>
+<script>
+(function () {
+  var input = document.getElementById('password');
+  var toggle = document.getElementById('password-toggle');
+  toggle.addEventListener('click', function () {
+    var visible = input.type === 'text';
+    input.type = visible ? 'password' : 'text';
+    toggle.classList.toggle('is-visible', !visible);
+    toggle.setAttribute('aria-pressed', String(!visible));
+    toggle.setAttribute('aria-label', visible ? 'Jelszó megjelenítése' : 'Jelszó elrejtése');
+  });
+})();
+</script>
 </body>
 </html>

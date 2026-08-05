@@ -15,6 +15,12 @@ $nextMonth = (clone $first)->modify('+1 month')->format('Y-m');
 $todayStr = date('Y-m-d');
 $showPending = !empty($_GET['pending']);
 
+$icsToken = admin_config()['ics_feed_token'] ?? '';
+$feedHost = $_SERVER['HTTP_HOST'];
+$feedPath = dirname($_SERVER['SCRIPT_NAME']) . '/calendar-feed.php?token=' . urlencode($icsToken);
+$feedUrlHttps = (!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $feedHost . $feedPath;
+$feedUrlWebcal = 'webcal://' . $feedHost . $feedPath;
+
 $monthNames = ['Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'];
 $dayNames = ['H','K','Sze','Cs','P','Szo','V'];
 
@@ -78,27 +84,17 @@ while ($cursor <= $gridEnd) {
         return ($b['endCol'] - $b['startCol']) <=> ($a['endCol'] - $a['startCol']);
     });
 
-    $laneEnds = [];
-    foreach ($events as &$ev) {
-        $lane = null;
-        foreach ($laneEnds as $laneIdx => $end) {
-            if ($end < $ev['startCol']) { $lane = $laneIdx; break; }
-        }
-        if ($lane === null) $lane = count($laneEnds);
-        $ev['lane'] = $lane;
-        $laneEnds[$lane] = $ev['endCol'];
+    // One lane per booking — even bookings whose stays don't overlap in time
+    // get their own row, so no two distinct bookings ever share a line.
+    // (Multiple dogs on the *same* booking already share one bar/lane, which
+    // is what we want — this only stops different bookings compacting together.)
+    foreach ($events as $idx => &$ev) {
+        $ev['lane'] = $idx;
     }
     unset($ev);
 
-    $weeks[] = ['days' => $days, 'events' => $events, 'maxLanes' => max(1, count($laneEnds))];
+    $weeks[] = ['days' => $days, 'events' => $events, 'maxLanes' => max(1, count($events))];
     $cursor->modify('+7 days');
-}
-
-// Every week row uses the *month's* tallest lane count, not its own — so
-// all week rows are the same height instead of a jagged, variable grid.
-$globalMaxLanes = 1;
-foreach ($weeks as $w) {
-    $globalMaxLanes = max($globalMaxLanes, $w['maxLanes']);
 }
 
 $pageTitle = 'Naptár';
@@ -143,6 +139,16 @@ require __DIR__ . '/includes/layout_header.php';
 .cal-legend .legend-item { display: flex; align-items: center; gap: 8px; }
 .cal-legend .cal-bar { width: 18px; height: 12px; padding: 0; display: inline-block; margin: 0; }
 
+.ics-card { margin-top: 28px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ics-card .ics-info { display: flex; align-items: center; gap: 12px; }
+.ics-card .ics-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: rgba(249,153,5,0.15); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ics-card .ics-icon svg { width: 18px; height: 18px; }
+.ics-card h3 { font-size: 14px; color: var(--text-primary); margin-bottom: 2px; }
+.ics-card p { font-size: 12px; color: var(--text-muted); }
+.ics-card .ics-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ics-fallback { font-size: 11px; color: var(--text-muted); margin-top: 10px; width: 100%; word-break: break-all; }
+.ics-fallback code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
+
 @media (max-width: 720px) {
   .cal-daycell { padding: 4px; min-height: 30px; }
   .cal-bar { font-size: 9px; padding: 2px 4px; }
@@ -174,7 +180,7 @@ require __DIR__ . '/includes/layout_header.php';
 
 <div class="cal-body">
   <?php foreach ($weeks as $week): ?>
-    <div class="cal-week" style="grid-template-rows: 40px repeat(<?= $globalMaxLanes ?>, 30px);">
+    <div class="cal-week" style="grid-template-rows: 40px repeat(<?= $week['maxLanes'] ?>, 30px);">
       <?php foreach ($week['days'] as $i => $day):
         $dateKey = $day->format('Y-m-d');
         $inMonth = $day->format('Y-m') === $first->format('Y-m');
@@ -208,6 +214,25 @@ require __DIR__ . '/includes/layout_header.php';
   <div class="legend-item"><span class="cal-bar pending"></span> Függőben lévő foglalás</div>
   <?php endif; ?>
   <div class="legend-item"><span class="cal-full-dot"></span> Betelt nap (<?= MAX_DAILY_DOGS ?> kutya)</div>
+</div>
+
+<div class="card ics-card">
+  <div class="ics-info">
+    <div class="ics-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div>
+      <h3>Naptár feliratkozás (iPhone / Google / Outlook)</h3>
+      <p>Egyszer állítod be, utána a foglalások automatikusan frissülnek — nem kell kézzel bepötyögni.</p>
+    </div>
+  </div>
+  <div class="ics-actions">
+    <a class="btn btn-primary" href="<?= htmlspecialchars($feedUrlWebcal) ?>">📅 Feliratkozás</a>
+    <a class="btn btn-outline" href="<?= htmlspecialchars($feedUrlHttps) ?>" download>.ics letöltése</a>
+  </div>
+  <div class="ics-fallback">
+    Ha a gomb nem nyitja meg automatikusan a Naptár appot: iPhone-on <em>Beállítások → Naptár → Fiókok → Fiók hozzáadása → Egyéb → Feliratkozásos naptár hozzáadása</em>, és illeszd be ezt a címet: <code><?= htmlspecialchars($feedUrlHttps) ?></code>
+  </div>
 </div>
 
 <?php require __DIR__ . '/includes/layout_footer.php'; ?>

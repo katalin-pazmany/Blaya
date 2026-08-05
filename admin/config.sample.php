@@ -7,4 +7,8 @@ return [
     'admin_password_salt' => 'REPLACE_ME',
     'admin_password_hash' => 'REPLACE_ME',
     'admin_password_iterations' => 300000,
+
+    // Secret used in the calendar subscription feed URL — generate with:
+    //   php -r "echo bin2hex(random_bytes(24));"
+    'ics_feed_token' => 'REPLACE_ME',
 ];
