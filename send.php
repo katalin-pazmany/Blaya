@@ -72,6 +72,12 @@ if (($_POST['type'] ?? '') === 'contact') {
 }
 
 // ─── Adatok kiolvasása (multipart form-data) ───
+// NOTE: everything below is htmlspecialchars()-escaped immediately, because
+// these variables get interpolated straight into the raw HTML email bodies
+// further down (row()/sec()/etc. don't escape). Anything that also needs to
+// go into the SQLite booking record (admin panel) must NOT reuse these —
+// storing pre-escaped text would double-escape on every future display.
+// See the "Raw (unescaped) copies" block below for the DB-bound versions.
 $name           = htmlspecialchars($_POST['name'] ?? '');
 $phone          = htmlspecialchars($_POST['phone'] ?? '');
 $email          = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
@@ -132,6 +138,68 @@ for ($n = 2; $n <= 4; $n++) {
     ];
 }
 
+// ─── Raw (unescaped) copies — for the SQLite booking record only ───
+// The admin panel (admin/booking.php, bookings.php, calendar.php) escapes
+// on display itself, same as any normal DB-backed page. Storing the
+// htmlspecialchars()'d $name/$dogName/... above instead would mean every
+// admin page double-escapes them (an "&" in an address becomes "&amp;amp;"
+// etc.) — so the DB always gets the plain, un-escaped submitted text.
+function postRaw(string $key, string $default = ''): string {
+    return trim((string)($_POST[$key] ?? $default));
+}
+$nameRaw           = postRaw('name');
+$phoneRaw          = postRaw('phone');
+$addressRaw        = postRaw('address');
+$emergencyNameRaw  = postRaw('emergencyName');
+$emergencyPhoneRaw = postRaw('emergencyPhone');
+$emergencyRelRaw   = postRaw('emergencyRelation');
+$dogNameRaw        = postRaw('dogName');
+$dogBreedRaw       = postRaw('dogBreed');
+$dogAgeRaw         = postRaw('dogAge');
+$dogGenderRaw      = postRaw('dogGender');
+$dogNeuteredRaw    = postRaw('dogNeutered');
+$dogHeatRaw        = postRaw('dogHeat', 'Nem');
+$dogChipRaw        = postRaw('dogChip');
+$dogSinceRaw       = postRaw('dogSince');
+$dogFoodRaw        = postRaw('dogFood');
+$dogFoodAmtRaw     = postRaw('dogFoodAmt');
+$vaccRabiesRaw     = postRaw('vaccRabies');
+$vaccComboRaw      = postRaw('vaccCombo');
+$wormerNameRaw     = postRaw('wormerName');
+$wormerDateRaw     = postRaw('wormerDate');
+$dogIllnessRaw     = postRaw('dogIllness');
+$dogMedsRaw        = postRaw('dogMeds');
+$dogTraumaRaw      = postRaw('dogTrauma');
+$dogBehaviorRaw    = postRaw('dogBehavior');
+$dogCommentRaw     = postRaw('dogComment');
+$dateFromRaw       = postRaw('dateFrom');
+$dateToRaw         = postRaw('dateTo', 'Nincs megadva');
+$paymentMethodRaw  = postRaw('paymentMethod');
+$paymentTimingRaw  = postRaw('paymentTiming');
+
+$extraDogsRaw = [];
+foreach ($extraDogs as $n => $d) {
+    $extraDogsRaw[$n] = [
+        'name'       => postRaw("dog{$n}Name"),
+        'breed'      => postRaw("dog{$n}Breed"),
+        'age'        => postRaw("dog{$n}Age"),
+        'gender'     => postRaw("dog{$n}Gender"),
+        'neutered'   => postRaw("dog{$n}Neutered"),
+        'chip'       => postRaw("dog{$n}Chip"),
+        'since'      => postRaw("dog{$n}Since"),
+        'food'       => postRaw("dog{$n}Food"),
+        'foodAmt'    => postRaw("dog{$n}FoodAmt"),
+        'vaccRabies' => postRaw("dog{$n}VaccRabies"),
+        'vaccCombo'  => postRaw("dog{$n}VaccCombo"),
+        'wormerName' => postRaw("dog{$n}WormerName"),
+        'wormerDate' => postRaw("dog{$n}WormerDate"),
+        'illness'    => postRaw("dog{$n}Illness"),
+        'meds'       => postRaw("dog{$n}Meds"),
+        'trauma'     => postRaw("dog{$n}Trauma"),
+        'behavior'   => postRaw("dog{$n}Behavior"),
+    ];
+}
+
 // ─── Veszettség oltás 14 napos szabály ───
 // Az oltásnak legalább 14 nappal az érkezés előtt kellett megtörténnie.
 // Ha nincs (értelmezhető) érkezési dátum, a mai naphoz viszonyítunk.
@@ -149,6 +217,7 @@ if ($rabiesFlagMain) $rabiesAlertNames[] = $dogName ?: '1. kutya';
 foreach ($extraDogs as $n => &$d) {
     $d['rabiesFlag'] = $d['vaccRabies'] && rabiesTooRecent($d['vaccRabies'], $dateFrom);
     if ($d['rabiesFlag']) $rabiesAlertNames[] = $d['name'] ?: "{$n}. kutya";
+    $extraDogsRaw[$n]['rabiesFlag'] = $d['rabiesFlag'];
 }
 unset($d);
 
@@ -169,6 +238,7 @@ if ($wormerFlagMain) $wormerAlertNames[] = $dogName ?: '1. kutya';
 foreach ($extraDogs as $n => &$d) {
     $d['wormerFlag'] = $d['wormerDate'] && wormerTooOld($d['wormerDate'], $dateFrom);
     if ($d['wormerFlag']) $wormerAlertNames[] = $d['name'] ?: "{$n}. kutya";
+    $extraDogsRaw[$n]['wormerFlag'] = $d['wormerFlag'];
 }
 unset($d);
 
@@ -205,18 +275,91 @@ if (!$name || !$email || !$dogName) {
     echo json_encode(['success'=>false,'error'=>'Missing required fields']); exit();
 }
 
+// ─── Foglalás mentése az admin felülethez (SQLite) ───
+// Ha ez meghiúsul, a foglalási email küldése akkor is folytatódik —
+// a mentés nem szakíthatja meg a meglévő emailes folyamatot.
+require_once __DIR__ . '/admin/includes/db.php';
+$bookingId = saveBooking([
+    'owner_name'      => $nameRaw,
+    'owner_phone'     => $phoneRaw,
+    'owner_email'     => $email,
+    'owner_address'   => $addressRaw,
+    'dog_name'        => $dogNameRaw,
+    'dogs_count'      => $dogsCount,
+    'date_from'       => $dateFromRaw,
+    'date_to'         => $dateToRaw,
+    'total'           => $total,
+    'deposit'         => $deposit,
+    'remainder'       => $remainder,
+    'payment_method'  => $paymentMethodRaw,
+    'payment_timing'  => $paymentTimingRaw,
+    'packages_raw'    => $packagesRaw,
+    'raw' => [
+        'emergencyName'     => $emergencyNameRaw,
+        'emergencyPhone'    => $emergencyPhoneRaw,
+        'emergencyRelation' => $emergencyRelRaw,
+        'dogBreed'          => $dogBreedRaw,
+        'dogAge'            => $dogAgeRaw,
+        'dogGender'         => $dogGenderRaw,
+        'dogNeutered'       => $dogNeuteredRaw,
+        'dogHeat'           => $dogHeatRaw,
+        'dogChip'           => $dogChipRaw,
+        'dogSince'          => $dogSinceRaw,
+        'dogFood'           => $dogFoodRaw,
+        'dogFoodAmt'        => $dogFoodAmtRaw,
+        'vaccRabies'        => $vaccRabiesRaw,
+        'vaccCombo'         => $vaccComboRaw,
+        'wormerName'        => $wormerNameRaw,
+        'wormerDate'        => $wormerDateRaw,
+        'dogIllness'        => $dogIllnessRaw,
+        'dogMeds'           => $dogMedsRaw,
+        'dogTrauma'         => $dogTraumaRaw,
+        'dogBehavior'       => $dogBehaviorRaw,
+        'dogComment'        => $dogCommentRaw,
+        'rabiesFlagMain'    => $rabiesFlagMain,
+        'wormerFlagMain'    => $wormerFlagMain,
+        'extraDogs'         => $extraDogsRaw,
+    ],
+]);
+
 // ─── Képek feldolgozása ───
+// A kiskönyv/fotó fájlokat tartósan is elmentjük (admin/data/uploads/{id}/),
+// hogy az admin felületen is megnézhetők legyenek — nem csak az emailben.
 $attachments = [];
+$savedFiles = [];
 foreach($_FILES as $key => $file) {
     if(strpos($key, 'booklet_') === 0 || strpos($key, 'photo_') === 0) {
         if($file['error'] === UPLOAD_ERR_OK) {
+            $originalName = basename($file['name']);
+            // $file['type'] is just whatever the browser claims and is
+            // trivial to forge — sniff the real content instead and drop
+            // anything that isn't one of the types the form's own file
+            // picker allows (see ALLOWED_UPLOAD_TYPES in admin/includes/db.php).
+            $safeType = detectSafeUploadType($file['tmp_name'], $originalName);
+            if ($safeType === null) continue;
+            $storedName = $bookingId ? saveBookingAttachmentFile($bookingId, $file['tmp_name'], $originalName) : null;
+            $content = $storedName
+                ? file_get_contents(bookingAttachmentPath($bookingId, $storedName))
+                : file_get_contents($file['tmp_name']);
             $attachments[] = [
-                'name'    => basename($file['name']),
-                'type'    => $file['type'],
-                'content' => base64_encode(file_get_contents($file['tmp_name'])),
+                'name'    => $originalName,
+                'type'    => $safeType,
+                'content' => base64_encode($content),
             ];
+            if ($storedName) {
+                $savedFiles[] = [
+                    'field'  => $key,
+                    'name'   => $originalName,
+                    'stored' => $storedName,
+                    'type'   => $safeType,
+                    'size'   => $file['size'],
+                ];
+            }
         }
     }
+}
+if ($bookingId && !empty($savedFiles)) {
+    saveBookingAttachments($bookingId, $savedFiles);
 }
 
 // ─── Stílusok ───
