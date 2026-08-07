@@ -32,8 +32,24 @@ if (!is_file($path)) {
     exit('A fájl nem található a szerveren.');
 }
 
-header('Content-Type: ' . ($match['type'] ?: 'application/octet-stream'));
-header('Content-Disposition: inline; filename="' . addslashes(basename($match['name'] ?: $file)) . '"');
+// Never trust the stored 'type' for inline rendering — it may be a forged
+// client-supplied value (or a legacy row saved before upload validation
+// existed). Re-sniff the actual file content and only serve it inline as
+// one of the whitelisted safe types; anything else downloads as a generic
+// blob instead of risking the browser rendering it as HTML in this
+// logged-in admin session.
+$safeName = basename($match['name'] ?: $file);
+$safeType = detectSafeUploadType($path, $match['name'] ?: $file);
+if ($safeType !== null) {
+    header('Content-Type: ' . $safeType);
+    header('Content-Disposition: inline; filename="' . addslashes($safeName) . '"');
+} else {
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . addslashes($safeName) . '"');
+}
+// Belt-and-braces: stops a browser from ever content-sniffing this response
+// into something more dangerous than the Content-Type set above.
+header('X-Content-Type-Options: nosniff');
 header('Content-Length: ' . filesize($path));
 header('Cache-Control: private, max-age=0, no-cache');
 readfile($path);

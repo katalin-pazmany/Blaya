@@ -197,6 +197,46 @@ function getAcceptedBookingsInRange(string $rangeStart, string $rangeEnd): array
 // inherits admin/data/.htaccess's "deny all", so files are only reachable
 // through admin/attachment.php after login.
 
+// Whitelisted upload types — matches the public form's own `accept`
+// attribute (index.html: booklet takes .pdf/.jpg/.jpeg/.png, photo takes
+// .jpg/.jpeg/.png). Used both when a file is first uploaded (send.php) and
+// again when attachment.php serves it back, so a forged/legacy row can
+// never be rendered as HTML.
+const ALLOWED_UPLOAD_TYPES = [
+    'jpg'  => 'image/jpeg',
+    'jpeg' => 'image/jpeg',
+    'png'  => 'image/png',
+    'pdf'  => 'application/pdf',
+];
+
+// The *returned* type always comes from this whitelist, keyed off the file
+// extension — never from the client-supplied $_FILES[...]['type'], which is
+// just whatever the browser claims in the multipart request and is trivial
+// to forge (that's what let a crafted upload get served back inline as
+// text/html). When the fileinfo extension is available (bundled with PHP by
+// default, but not guaranteed on every host) this also sniffs the real
+// file content as a best-effort check and rejects a mismatch — e.g. an
+// .html file renamed to .jpg — but even without it, the forged-Content-Type
+// attack is already closed because the extension-mapped type is all that's
+// ever used, so uploads keep working on hosts without fileinfo instead of
+// silently failing.
+function detectSafeUploadType(string $path, string $originalName): ?string {
+    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    if (!isset(ALLOWED_UPLOAD_TYPES[$ext])) return null;
+    $expected = ALLOWED_UPLOAD_TYPES[$ext];
+
+    if (is_file($path) && function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $detected = finfo_file($finfo, $path);
+            finfo_close($finfo);
+            if ($detected !== false && $detected !== $expected) return null;
+        }
+    }
+
+    return $expected;
+}
+
 function bookingUploadsDir(int $bookingId): string {
     return __DIR__ . '/../data/uploads/' . $bookingId;
 }
