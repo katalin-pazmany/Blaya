@@ -1,0 +1,11 @@
+# Netlify has no PHP runtime — any .php file here would otherwise be served
+# as raw, unexecuted source to anyone who requests it directly (confirmed:
+# blaya.netlify.app/send.php was returning the file's plain source with a
+# 200). The real PHP backend lives on separate hosting — the booking form
+# posts straight to https://blaya.hu/send.php (see index.html) — so nothing
+# on this Netlify deployment needs its own .php files reachable at all.
+[[redirects]]
+  from = "/*.php"
+  to = "/"
+  status = 404
+  force = true
